@@ -13,6 +13,7 @@ import {
   FlatList,
   Image,
   ImageBackground,
+  RefreshControl,
   ScrollView,
   StatusBar,
   Text,
@@ -64,21 +65,42 @@ export default function Tab() {
   const [topRatedMovies, setTopRatedMovies] = useState<Movie[]>([]);
   const [upcomingMovies, setUpcomingMovies] = useState<Movie[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
   const flatListRef = useRef<FlatList>(null);
 
-  useEffect(() => {
-    Promise.all([
-      fetchTrendingMovies(),
-      fetchTopRatedMovies(),
-      fetchUpcomingMovies(),
-    ]).then(([trendingRes, topRatedRes, upcomingRes]) => {
+  const loadData = async (isRefreshing = false) => {
+    if (!isRefreshing) setLoading(true);
+
+    try {
+      // 1. Fetch Trending Movies first
+      const trendingRes = await fetchTrendingMovies();
       setTrendingMovies(trendingRes.results);
+      if (!isRefreshing) setLoading(false); // Show UI as soon as first batch is ready
+
+      // 2. Fetch Top Rated
+      const topRatedRes = await fetchTopRatedMovies();
       setTopRatedMovies(topRatedRes.results);
+
+      // 3. Fetch Upcoming
+      const upcomingRes = await fetchUpcomingMovies();
       setUpcomingMovies(upcomingRes.results);
-      setLoading(false);
-    });
+    } catch (error) {
+      console.error("Error fetching movies:", error);
+    } finally {
+      if (!isRefreshing) setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
   }, []);
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    loadData(true);
+  };
 
   useEffect(() => {
     if (trendingMovies.length > 0 && !loading) {
@@ -194,6 +216,14 @@ export default function Tab() {
       }}
       contentContainerStyle={{ paddingBottom: 100 }}
       showsVerticalScrollIndicator={false}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          tintColor="#ef4444"
+          colors={["#ef4444"]}
+        />
+      }
     >
       <StatusBar
         barStyle="light-content"
