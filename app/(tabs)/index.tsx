@@ -68,6 +68,9 @@ export default function Tab() {
   const [refreshing, setRefreshing] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
   const flatListRef = useRef<FlatList>(null);
+  const initializedRef = useRef(false);
+
+  const [heroData, setHeroData] = useState<Movie[]>([]);
 
   const loadData = async (isRefreshing = false) => {
     if (!isRefreshing) setLoading(true);
@@ -76,7 +79,18 @@ export default function Tab() {
       // 1. Fetch Trending Movies first
       const trendingRes = await fetchTrendingMovies();
       setTrendingMovies(trendingRes.results);
-      if (!isRefreshing) setLoading(false); // Show UI as soon as first batch is ready
+
+      // Prepare infinite data
+      if (trendingRes.results.length > 0) {
+        const base = trendingRes.results.slice(0, 5);
+        const looped = [];
+        for (let i = 0; i < 100; i++) {
+          looped.push(...base);
+        }
+        setHeroData(looped);
+      }
+
+      if (!isRefreshing) setLoading(false);
 
       // 2. Fetch Top Rated
       const topRatedRes = await fetchTopRatedMovies();
@@ -97,27 +111,44 @@ export default function Tab() {
     loadData();
   }, []);
 
+  // Initialize scroll position when data is ready
+  useEffect(() => {
+    if (heroData.length > 0 && !initializedRef.current) {
+      setTimeout(() => {
+        flatListRef.current?.scrollToIndex({ index: 250, animated: false });
+        setActiveIndex(250);
+        initializedRef.current = true;
+      }, 100);
+    }
+  }, [heroData]);
+
   const onRefresh = () => {
     setRefreshing(true);
     loadData(true);
   };
 
   useEffect(() => {
-    if (trendingMovies.length > 0 && !loading) {
+    if (heroData.length > 0 && !loading && initializedRef.current) {
       const interval = setInterval(() => {
-        const nextIndex = (activeIndex + 1) % 5; // Slide through top 5
-        setActiveIndex(nextIndex);
-        flatListRef.current?.scrollToIndex({
-          index: nextIndex,
-          animated: true,
-        });
-      }, 2000);
+        const nextIndex = activeIndex + 1;
+        if (nextIndex >= heroData.length) {
+          flatListRef.current?.scrollToIndex({ index: 250, animated: false });
+          setActiveIndex(250);
+        } else {
+          flatListRef.current?.scrollToIndex({
+            index: nextIndex,
+            animated: true,
+          });
+          setActiveIndex(nextIndex);
+        }
+      }, 3000);
 
       return () => clearInterval(interval);
     }
-  }, [activeIndex, trendingMovies, loading]);
+  }, [activeIndex, heroData, loading]);
 
   const renderHeroItem = ({ item }: { item: Movie }) => (
+    // ... same render item logic ...
     <TouchableOpacity
       activeOpacity={1}
       onPress={() =>
@@ -193,14 +224,19 @@ export default function Tab() {
           backgroundColor: colorScheme === "dark" ? "#000000" : "#ffffff",
         }}
       >
-        <View className="w-full h-[550px] bg-neutral-100 dark:bg-neutral-900 animate-pulse" />
+        <StatusBar
+          barStyle="light-content"
+          translucent
+          backgroundColor="transparent"
+        />
+        <View className="w-full h-[550px] bg-gray-200 dark:bg-zinc-900 animate-pulse" />
         <View className="p-4">
-          <View className="h-8 w-48 bg-neutral-200 dark:bg-neutral-800 rounded-lg mb-6" />
+          <View className="h-8 w-48 bg-gray-200 dark:bg-zinc-900 rounded-lg mb-6" />
           <View className="flex-row">
             {[1, 2, 3].map((i) => (
               <View
                 key={i}
-                className="w-40 h-60 bg-neutral-200 dark:bg-neutral-800 rounded-2xl mr-4"
+                className="w-40 h-60 bg-gray-200 dark:bg-zinc-900 rounded-2xl mr-4"
               />
             ))}
           </View>
@@ -235,7 +271,7 @@ export default function Tab() {
       <View>
         <FlatList
           ref={flatListRef}
-          data={trendingMovies.slice(0, 5)}
+          data={heroData}
           renderItem={renderHeroItem}
           horizontal
           pagingEnabled
@@ -243,12 +279,16 @@ export default function Tab() {
           onMomentumScrollEnd={(e) => {
             setActiveIndex(Math.round(e.nativeEvent.contentOffset.x / width));
           }}
-          keyExtractor={(item) => item.id.toString()}
+          keyExtractor={(item, index) => `${item.id}-${index}`}
           getItemLayout={(_, index) => ({
             length: width,
             offset: width * index,
             index,
           })}
+          initialNumToRender={1}
+          maxToRenderPerBatch={2}
+          windowSize={3}
+          removeClippedSubviews={true}
         />
       </View>
 

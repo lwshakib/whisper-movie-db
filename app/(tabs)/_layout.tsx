@@ -104,6 +104,7 @@ export default function TabLayout(): React.JSX.Element {
     shadowOpacity: colorScheme === "dark" ? 0.4 : 0.1,
     shadowRadius: 20,
     elevation: 20,
+    zIndex: 50,
   };
 
   const renderTabBarButton = (
