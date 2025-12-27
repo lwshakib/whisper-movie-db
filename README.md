@@ -1,50 +1,104 @@
-# Welcome to your Expo app 👋
+# Whisper - Movie & TV Show Discovery App 🎬
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+![Whisper Banner](https://img.shields.io/badge/Status-Active-success?style=flat-square) ![License](https://img.shields.io/badge/License-MIT-blue?style=flat-square) ![Expo](https://img.shields.io/badge/Expo-52.0.0-black?logo=expo&style=flat-square)
 
-## Get started
+**Whisper** is a modern, fast, and beautiful mobile application built with **React Native**, **Expo**, and **Tailwind CSS (NativeWind)**. It leverages the **TMDB (The Movie Database) API** to provide users with a comprehensive and immersive movie discovery experience.
 
-1. Install dependencies
+## ✨ Features
 
-   ```bash
-   npm install
-   ```
+- **🎬 Trending & Popular**: Discover what's hot right now in movies and TV.
+- **🔍 Advanced Search**: Find movies, TV shows, and people with instant search and history.
+- **📱 Modern UI/UX**:
+  - Fully responsive and pixel-perfect design.
+  - Smooth animations using `react-native-reanimated`.
+  - Dark Mode & Light Mode support.
+  - Immersive Onboarding experience.
+- **ℹ️ Detailed Info**:
+  - Full movie/person details.
+  - Watch dynamic trailers directly in the app.
+  - View cast, crew, production companies, and similar movies.
+- **❤️ Favorites**: Mark movies as favorites and manage your watchlist.
+- **⚡ Performance**: Optimized list virtualization and image caching.
 
-2. Start the app
+## 🛠️ Tech Stack
 
-   ```bash
-   npx expo start
-   ```
+- **Framework**: [React Native](https://reactnative.dev/) with [Expo (SDK 52)](https://expo.dev/)
+- **Routing**: [Expo Router](https://docs.expo.dev/router/introduction/)
+- **Styling**: [NativeWind v4](https://www.nativewind.dev/) (Tailwind CSS)
+- **Animations**: [React Native Reanimated](https://docs.swmansion.com/react-native-reanimated/)
+- **Icons**: [Expo Vector Icons](https://icons.expo.fyi/)
+- **Data Source**: [TMDB API](https://www.themoviedb.org/documentation/api)
+- **State Management**: React Context / Zustand (for Onboarding)
+- **Storage**: Expo Secure Store / Async Storage
 
-In the output, you'll find options to open the app in a
+## 🚀 Getting Started
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+### Prerequisites
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+- Node.js (v18+)
+- [Bun](https://bun.sh/) (Recommended) or npm/yarn
+- Expo Go app on your physical device or an Android/iOS Simulator.
 
-## Get a fresh project
+### Installation
 
-When you're ready, run:
+1.  **Clone the repository**
 
-```bash
-npm run reset-project
-```
+    ```bash
+    git clone https://github.com/lwshakib/whisper-movie-db.git
+    cd whisper-movie-db
+    ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+2.  **Install dependencies**
 
-## Learn more
+    ```bash
+    bun install
+    # or
+    npm install
+    ```
 
-To learn more about developing your project with Expo, look at the following resources:
+3.  **Configure Environment Variables**
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+    Create a `.env` file in the root directory and add your TMDB API Key:
 
-## Join the community
+    ```env
+    EXPO_PUBLIC_MOVIE_DB_API_KEY=your_tmdb_api_key_here
+    ```
 
-Join our community of developers creating universal apps.
+    > **Note**: You can get a free API key from [The Movie Database](https://www.themoviedb.org/settings/api).
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+4.  **Run the App**
+
+    ```bash
+    npx expo start
+    ```
+
+    - Scan the QR code with **Expo Go** (Android/iOS).
+    - Press `w` to run on Web.
+    - Press `a` to run on Android Emulator.
+    - Press `i` to run on iOS Simulator.
+
+## 🤝 Contributing
+
+Contributions are what make the open-source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
+
+Please read our [Contributing Guide](CONTRIBUTING.md) for details on our code of conduct and the process for submitting pull requests.
+
+## 📜 Code of Conduct
+
+We are committed to fostering a welcoming and inclusive community. Please review our [Code of Conduct](CODE_OF_CONDUCT.md) before participating.
+
+## 📄 License
+
+Distributed under the MIT License. See `LICENSE` for more information.
+
+## 👤 Author
+
+**lwshakib**
+
+- GitHub: [@lwshakib](https://github.com/lwshakib)
+
+---
+
+<p align="center">
+  Made with ❤️ by lwshakib
+</p>
