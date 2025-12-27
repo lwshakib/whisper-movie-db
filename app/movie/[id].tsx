@@ -13,11 +13,19 @@ import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React, { useEffect, useState } from "react";
-import { Image, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import {
+  Image,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  useColorScheme,
+  View,
+} from "react-native";
 
 export default function MovieDetails() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
+  const colorScheme = useColorScheme();
   const [movie, setMovie] = useState<any>(null);
   const [credits, setCredits] = useState<any>(null);
   const [similar, setSimilar] = useState<any>(null);
@@ -105,7 +113,12 @@ export default function MovieDetails() {
   }
 
   return (
-    <View className="flex-1 bg-white dark:bg-black">
+    <View
+      style={{
+        flex: 1,
+        backgroundColor: colorScheme === "dark" ? "#000000" : "#ffffff",
+      }}
+    >
       <FloatingBackButton />
       {/* Favorite Icon Top Right */}
       <TouchableOpacity

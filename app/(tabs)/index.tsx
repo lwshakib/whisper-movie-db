@@ -7,21 +7,23 @@ import {
 } from "@/TMDB/config";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
+  Dimensions,
   FlatList,
   Image,
   ImageBackground,
   ScrollView,
   StatusBar,
-  StyleSheet,
   Text,
   TouchableOpacity,
+  useColorScheme,
   View,
 } from "react-native";
-import { FontAwesome } from "@expo/vector-icons";
 
-// Define the Movie type based on the properties used
+const { width } = Dimensions.get("window");
+
+// Define the Movie type
 interface Movie {
   backdrop_path: string;
   poster_path: string;
@@ -31,32 +33,39 @@ interface Movie {
   id: number;
 }
 
-// Helper component for section header with "Explore All" button
+// Modern Section Header
 const SectionHeader: React.FC<{ title: string; onExploreAll: () => void }> = ({
   title,
   onExploreAll,
 }) => (
-  <View className="flex-row justify-between items-center px-4 mt-6 mb-2">
-    <Text className="text-black dark:text-white text-xl font-bold">{title}</Text>
+  <View className="flex-row justify-between items-center px-4 mt-8 mb-4">
+    <View className="flex-row items-center">
+      <View className="w-1.5 h-6 bg-red-600 rounded-full mr-3" />
+      <Text className="text-black dark:text-white text-2xl font-black tracking-tight">
+        {title}
+      </Text>
+    </View>
     <TouchableOpacity
       onPress={onExploreAll}
-      className="flex-row items-center"
+      className="bg-gray-100 dark:bg-gray-900 px-4 py-2 rounded-full"
       activeOpacity={0.7}
     >
-      <Text className="text-white font-semibold mr-1">
-        Explore All
+      <Text className="text-gray-600 dark:text-gray-400 font-bold text-xs uppercase tracking-widest">
+        See All
       </Text>
-      {/* <FontAwesome name="arrow-right" size={14} color="white" /> */}
     </TouchableOpacity>
   </View>
 );
 
 export default function Tab() {
   const router = useRouter();
+  const colorScheme = useColorScheme();
   const [trendingMovies, setTrendingMovies] = useState<Movie[]>([]);
   const [topRatedMovies, setTopRatedMovies] = useState<Movie[]>([]);
   const [upcomingMovies, setUpcomingMovies] = useState<Movie[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const flatListRef = useRef<FlatList>(null);
 
   useEffect(() => {
     Promise.all([
@@ -71,262 +80,280 @@ export default function Tab() {
     });
   }, []);
 
-  if (loading) {
-    // Skeleton loading UI
-    return (
-      <ScrollView
-        className="flex-1 bg-white dark:bg-black"
-        contentContainerStyle={{ paddingBottom: 32 }}
-      >
-        {/* Skeleton Hero Section */}
-        <View
-          className="w-full h-96 justify-end rounded-b-3xl overflow-hidden bg-gray-200 dark:bg-gray-800 animate-pulse"
-          style={{
-            shadowColor: "#000",
-            shadowOpacity: 0.25,
-            shadowRadius: 10,
-            elevation: 10,
-          }}
-        />
-        {/* Skeleton Lists */}
-        {["Trending Movies", "Top Rated Movies", "Upcoming Movies"].map(
-          (title, idx) => (
-            <View key={title}>
-              <Text className="text-black dark:text-white text-xl font-bold px-4 mt-6 mb-2">
-                {title}
-              </Text>
-              <View className="flex-row px-4 pb-6">
-                {[...Array(5)].map((_, i) => (
-                  <View
-                    key={i}
-                    className="mr-4 rounded-xl overflow-hidden w-40"
-                  >
-                    <View className="w-40 h-60 bg-gray-200 dark:bg-gray-800 animate-pulse" />
-                    <View className="p-2">
-                      <View className="h-5 w-28 bg-gray-200 dark:bg-gray-700 rounded mb-2 animate-pulse" />
-                      <View className="h-3 w-20 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-                    </View>
-                  </View>
-                ))}
-              </View>
-            </View>
-          )
-        )}
-      </ScrollView>
-    );
-  }
+  useEffect(() => {
+    if (trendingMovies.length > 0 && !loading) {
+      const interval = setInterval(() => {
+        const nextIndex = (activeIndex + 1) % 5; // Slide through top 5
+        setActiveIndex(nextIndex);
+        flatListRef.current?.scrollToIndex({
+          index: nextIndex,
+          animated: true,
+        });
+      }, 2000);
 
-  return (
-    <ScrollView
-      className="flex-1 bg-white dark:bg-black"
-      contentContainerStyle={{ paddingBottom: 92 }}
+      return () => clearInterval(interval);
+    }
+  }, [activeIndex, trendingMovies, loading]);
+
+  const renderHeroItem = ({ item }: { item: Movie }) => (
+    <TouchableOpacity
+      activeOpacity={1}
+      onPress={() =>
+        router.push({
+          pathname: "/movie/[id]",
+          params: { id: item.id.toString() },
+        })
+      }
+      style={{ width }}
     >
-      <StatusBar hidden />
-
-      {/* Hero Section for Trending Movie */}
-      {trendingMovies.length > 0 && (
-        <ImageBackground
-          source={{
-            uri: `https://image.tmdb.org/t/p/w780${trendingMovies[0].backdrop_path}`,
-          }}
-          className="w-full h-96 justify-end rounded-b-3xl overflow-hidden"
-          style={{
-            shadowColor: "#000",
-            shadowOffset: { width: 0, height: 10 },
-            shadowOpacity: 0.25,
-            shadowRadius: 10,
-            elevation: 10,
-          }}
-          resizeMode="cover"
-        >
-          <LinearGradient
-            colors={["rgba(0,0,0,0.7)", "rgba(0,0,0,0.2)", "rgba(0,0,0,0.8)"]}
-            style={{ ...StyleSheet.absoluteFillObject }}
-            start={{ x: 0.5, y: 1 }}
-            end={{ x: 0.5, y: 0 }}
-          />
-          <View className="flex-row items-end p-5">
-            <View className="relative">
-              <Image
-                source={{
-                  uri: `https://image.tmdb.org/t/p/w185${trendingMovies[0].poster_path}`,
-                }}
-                className="w-28 h-44 rounded-xl mr-4 border-2 border-white bg-gray-200 dark:bg-gray-800"
-                style={{
-                  shadowColor: "#000",
-                  shadowOffset: { width: 0, height: 10 },
-                  shadowOpacity: 0.25,
-                  shadowRadius: 10,
-                }}
-              />
-              <View className="absolute top-2 left-2 bg-red-600 px-2 py-1 rounded-full">
-                <Text className="text-xs text-white font-bold">Trending</Text>
-              </View>
-            </View>
-            <View className="flex-1">
-              <Text className="text-white text-3xl font-extrabold mb-1 drop-shadow-lg">
-                {trendingMovies[0].title}
-              </Text>
-              <Text className="text-gray-200 text-base mb-2 opacity-85 font-medium">
-                {trendingMovies[0].release_date}
-              </Text>
-              <Text
-                className="text-gray-100 text-base opacity-95 mb-3"
-                numberOfLines={4}
-              >
-                {trendingMovies[0].overview}
-              </Text>
-              <TouchableOpacity
-                className="bg-red-600 px-5 py-2 rounded-full self-start mt-2"
-                style={{
-                  shadowColor: "#000",
-                  shadowOffset: { width: 0, height: 4 },
-                  shadowOpacity: 0.15,
-                  shadowRadius: 6,
-                  elevation: 6,
-                }}
-                onPress={() =>
-                  router.push({
-                    pathname: "/movie/[id]",
-                    params: { id: trendingMovies[0].id.toString() },
-                  })
-                }
-              >
-                <Text className="text-white text-base font-bold">▶ Watch Now</Text>
-              </TouchableOpacity>
-            </View>
+      <ImageBackground
+        source={{
+          uri: `https://image.tmdb.org/t/p/w1280${item.backdrop_path}`,
+        }}
+        className="w-full h-[550px] justify-end"
+        resizeMode="cover"
+      >
+        <LinearGradient
+          colors={["transparent", "rgba(0,0,0,0.5)", "#000000"]}
+          className="absolute inset-x-0 bottom-0 h-[80%]"
+        />
+        <View className="p-6 mb-8">
+          <View className="bg-red-600 self-start px-3 py-1 rounded-full mb-3">
+            <Text className="text-white text-[10px] font-black uppercase tracking-widest">
+              Trending
+            </Text>
           </View>
-        </ImageBackground>
-      )}
-
-      {/* Trending Movies List */}
-      <SectionHeader
-        title="Trending Movies"
-        onExploreAll={() => router.push("/movies/trending-movies")}
-      />
-      <FlatList
-        data={trendingMovies}
-        keyExtractor={(item, index) => item.title + index}
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 24 }}
-        renderItem={({ item, index }) =>
-          // Skip the first movie (already shown in hero)
-          index === 0 ? null : (
+          <Text
+            className="text-white text-4xl font-black mb-2"
+            numberOfLines={2}
+          >
+            {item.title}
+          </Text>
+          <Text
+            className="text-gray-300 text-sm mb-6 leading-5"
+            numberOfLines={3}
+          >
+            {item.overview}
+          </Text>
+          <View className="flex-row items-center">
             <TouchableOpacity
-              className="mr-4 rounded-xl overflow-hidden w-40"
               onPress={() =>
                 router.push({
                   pathname: "/movie/[id]",
                   params: { id: item.id.toString() },
                 })
               }
-              activeOpacity={0.8}
+              className="bg-red-600 px-8 py-4 rounded-2xl flex-row items-center"
+              style={{
+                shadowColor: "#ef4444",
+                shadowOffset: { width: 0, height: 8 },
+                shadowOpacity: 0.4,
+                shadowRadius: 12,
+                elevation: 10,
+              }}
+            >
+              <Text className="text-white font-black text-base mr-2">
+                Watch Now
+              </Text>
+              <Text className="text-white text-xl">▶</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </ImageBackground>
+    </TouchableOpacity>
+  );
+
+  if (loading) {
+    return (
+      <View
+        className="flex-1"
+        style={{
+          backgroundColor: colorScheme === "dark" ? "#000000" : "#ffffff",
+        }}
+      >
+        <View className="w-full h-[550px] bg-gray-200 dark:bg-gray-900 animate-pulse" />
+        <View className="p-4">
+          <View className="h-8 w-48 bg-gray-200 dark:bg-gray-900 rounded-lg mb-6" />
+          <View className="flex-row">
+            {[1, 2, 3].map((i) => (
+              <View
+                key={i}
+                className="w-40 h-60 bg-gray-200 dark:bg-gray-900 rounded-2xl mr-4"
+              />
+            ))}
+          </View>
+        </View>
+      </View>
+    );
+  }
+
+  return (
+    <ScrollView
+      style={{
+        backgroundColor: colorScheme === "dark" ? "#000000" : "#ffffff",
+      }}
+      contentContainerStyle={{ paddingBottom: 100 }}
+      showsVerticalScrollIndicator={false}
+    >
+      <StatusBar
+        barStyle="light-content"
+        translucent
+        backgroundColor="transparent"
+      />
+
+      {/* Hero Slider */}
+      <View>
+        <FlatList
+          ref={flatListRef}
+          data={trendingMovies.slice(0, 5)}
+          renderItem={renderHeroItem}
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          onMomentumScrollEnd={(e) => {
+            setActiveIndex(Math.round(e.nativeEvent.contentOffset.x / width));
+          }}
+          keyExtractor={(item) => item.id.toString()}
+          getItemLayout={(_, index) => ({
+            length: width,
+            offset: width * index,
+            index,
+          })}
+        />
+      </View>
+
+      {/* Lists */}
+      <SectionHeader
+        title="Trending"
+        onExploreAll={() => router.push("/movies/trending-movies")}
+      />
+      <FlatList
+        data={trendingMovies.slice(5)}
+        keyExtractor={(item) => item.id.toString()}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{ paddingHorizontal: 16 }}
+        renderItem={({ item }) => (
+          <TouchableOpacity
+            className="mr-5"
+            onPress={() =>
+              router.push({
+                pathname: "/movie/[id]",
+                params: { id: item.id.toString() },
+              })
+            }
+          >
+            <View
+              className="w-44 h-64 rounded-3xl overflow-hidden mb-3"
+              style={{
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 10 },
+                shadowOpacity: 0.3,
+                shadowRadius: 15,
+                elevation: 8,
+              }}
             >
               <Image
                 source={{
                   uri: image500(item.poster_path) || fallbackMoviePoster,
                 }}
-                className="w-40 h-60 bg-gray-200 dark:bg-gray-800"
+                className="w-full h-full"
+                resizeMode="cover"
               />
-              <View className="p-2">
-                <Text
-                  className="text-black dark:text-white text-base font-semibold"
-                  numberOfLines={1}
-                >
-                  {item.title}
-                </Text>
-                <Text className="text-gray-600 dark:text-gray-300 text-xs mb-1">
-                  {item.release_date}
-                </Text>
-              </View>
-            </TouchableOpacity>
-          )
-        }
-      />
-
-      {/* Top Rated Movies List */}
-      <SectionHeader
-        title="Top Rated Movies"
-        onExploreAll={() => router.push("/movies/top-rated-movies")}
-      />
-      <FlatList
-        data={topRatedMovies}
-        keyExtractor={(item, index) => item.title + index}
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 24 }}
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            className="mr-4 rounded-xl overflow-hidden w-40"
-            onPress={() =>
-              router.push({
-                pathname: "/movie/[id]",
-                params: { id: item.id.toString() },
-              })
-            }
-            activeOpacity={0.8}
-          >
-            <Image
-              source={{
-                uri: image500(item.poster_path) || fallbackMoviePoster,
-              }}
-              className="w-40 h-60 bg-gray-200 dark:bg-gray-800"
-            />
-            <View className="p-2">
-              <Text
-                className="text-black dark:text-white text-base font-semibold"
-                numberOfLines={1}
-              >
-                {item.title}
-              </Text>
-              <Text className="text-gray-600 dark:text-gray-300 text-xs mb-1">
-                {item.release_date}
-              </Text>
             </View>
+            <Text
+              className="text-black dark:text-white font-bold text-base w-44"
+              numberOfLines={1}
+            >
+              {item.title}
+            </Text>
+            <Text className="text-gray-500 dark:text-gray-400 text-xs font-medium">
+              {item.release_date?.split("-")[0]}
+            </Text>
           </TouchableOpacity>
         )}
       />
 
-      {/* Upcoming Movies List */}
       <SectionHeader
-        title="Upcoming Movies"
-        onExploreAll={() => router.push("/movies/upcoming-movies")}
+        title="Top Rated"
+        onExploreAll={() => router.push("/movies/top-rated-movies")}
       />
       <FlatList
-        data={upcomingMovies}
-        keyExtractor={(item, index) => item.title + index}
+        data={topRatedMovies}
+        keyExtractor={(item) => item.id.toString()}
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 24 }}
+        contentContainerStyle={{ paddingHorizontal: 16 }}
         renderItem={({ item }) => (
           <TouchableOpacity
-            className="mr-4 rounded-xl overflow-hidden w-40"
+            className="mr-5"
             onPress={() =>
               router.push({
                 pathname: "/movie/[id]",
                 params: { id: item.id.toString() },
               })
             }
-            activeOpacity={0.8}
           >
-            <Image
-              source={{
-                uri: image500(item.poster_path) || fallbackMoviePoster,
-              }}
-              className="w-40 h-60 bg-gray-200 dark:bg-gray-800"
-            />
-            <View className="p-2">
-              <Text
-                className="text-black dark:text-white text-base font-semibold"
-                numberOfLines={1}
-              >
-                {item.title}
-              </Text>
-              <Text className="text-gray-600 dark:text-gray-300 text-xs mb-1">
-                {item.release_date}
-              </Text>
+            <View className="w-44 h-64 rounded-3xl overflow-hidden mb-3">
+              <Image
+                source={{
+                  uri: image500(item.poster_path) || fallbackMoviePoster,
+                }}
+                className="w-full h-full"
+                resizeMode="cover"
+              />
             </View>
+            <Text
+              className="text-black dark:text-white font-bold text-base w-44"
+              numberOfLines={1}
+            >
+              {item.title}
+            </Text>
+            <Text className="text-gray-500 dark:text-gray-400 text-xs font-medium">
+              {item.release_date?.split("-")[0]}
+            </Text>
+          </TouchableOpacity>
+        )}
+      />
+
+      <SectionHeader
+        title="Coming Soon"
+        onExploreAll={() => router.push("/movies/upcoming-movies")}
+      />
+      <FlatList
+        data={upcomingMovies}
+        keyExtractor={(item) => item.id.toString()}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{ paddingHorizontal: 16 }}
+        renderItem={({ item }) => (
+          <TouchableOpacity
+            className="mr-5"
+            onPress={() =>
+              router.push({
+                pathname: "/movie/[id]",
+                params: { id: item.id.toString() },
+              })
+            }
+          >
+            <View className="w-44 h-64 rounded-3xl overflow-hidden mb-3">
+              <Image
+                source={{
+                  uri: image500(item.poster_path) || fallbackMoviePoster,
+                }}
+                className="w-full h-full"
+                resizeMode="cover"
+              />
+            </View>
+            <Text
+              className="text-black dark:text-white font-bold text-base w-44"
+              numberOfLines={1}
+            >
+              {item.title}
+            </Text>
+            <Text className="text-gray-500 dark:text-gray-400 text-xs font-medium">
+              {item.release_date?.split("-")[0]}
+            </Text>
           </TouchableOpacity>
         )}
       />

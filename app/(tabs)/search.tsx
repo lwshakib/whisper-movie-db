@@ -9,6 +9,7 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
+  useColorScheme,
   View,
 } from "react-native";
 
@@ -29,6 +30,7 @@ export default function Search() {
   const { history, addToHistory, removeFromHistory, clearHistory } =
     useSearchHistory();
   const router = useRouter();
+  const colorScheme = useColorScheme();
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const latestQueryId = useRef<number>(0);
 
@@ -112,7 +114,13 @@ export default function Search() {
   }, [query]);
 
   return (
-    <View className="flex-1 items-center bg-white dark:bg-black px-4">
+    <View
+      style={{
+        flex: 1,
+        backgroundColor: colorScheme === "dark" ? "#000000" : "#ffffff",
+      }}
+      className="items-center px-4"
+    >
       {/* 🔍 Search Bar */}
       <View className="w-full mb-4 flex-row items-center relative mt-20">
         <TextInput
