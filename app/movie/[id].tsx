@@ -8,33 +8,23 @@ import {
   image500,
 } from "@/TMDB/config";
 import FloatingBackButton from "@/components/FloatingBackButton";
-import { api } from "@/convex/_generated/api";
-import { useUser } from "@clerk/clerk-expo";
+import { useFavorites } from "@/context";
 import { Ionicons } from "@expo/vector-icons";
-import { useMutation, useQuery } from "convex/react";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React, { useEffect, useState } from "react";
 import { Image, ScrollView, Text, TouchableOpacity, View } from "react-native";
 
 export default function MovieDetails() {
-  const addToVisitedMovies = useMutation(api.functions.addToVisitedMovies);
-  const removeFromFavorites = useMutation(api.functions.removeFromFavorites);
-  const addToFavorites = useMutation(api.functions.addToFavorites);
-
   const { id } = useLocalSearchParams();
   const router = useRouter();
   const [movie, setMovie] = useState<any>(null);
   const [credits, setCredits] = useState<any>(null);
   const [similar, setSimilar] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const { user } = useUser();
-  const getUserDetails = useQuery(api.functions.getUserDetails, {
-    clerkId: user?.id as string,
-  });
 
-  // Local state for optimistic favorite UI
-  const [isFavorite, setIsFavorite] = useState(false);
+  const { favorites, toggleFavorite } = useFavorites();
+  const isFavorite = favorites.includes(id as string);
 
   useEffect(() => {
     if (!id) return;
@@ -47,34 +37,9 @@ export default function MovieDetails() {
       setMovie(movieRes);
       setCredits(creditsRes);
       setSimilar(similarRes);
-
       setLoading(false);
     });
-
-    addToVisitedMovies({
-      movieId: id as string,
-      clerkId: user?.id as string,
-    });
-
-    if (getUserDetails?.favorites && id) {
-      setIsFavorite(getUserDetails.favorites.includes(id as string));
-    }
   }, [id]);
-
-  const handleToggleFavorite = async () => {
-    if (!user?.id || !id) return;
-    setIsFavorite((prev) => !prev);
-    try {
-      if (isFavorite) {
-        await removeFromFavorites({ movieId: id as string, clerkId: user.id });
-      } else {
-        await addToFavorites({ movieId: id as string, clerkId: user.id });
-      }
-    } catch (e) {
-      // revert UI if error
-      setIsFavorite((prev) => !prev);
-    }
-  };
 
   if (loading) {
     return (
@@ -144,7 +109,7 @@ export default function MovieDetails() {
       <FloatingBackButton />
       {/* Favorite Icon Top Right */}
       <TouchableOpacity
-        onPress={handleToggleFavorite}
+        onPress={() => toggleFavorite(id as string)}
         style={{ position: "absolute", top: 40, right: 24, zIndex: 50 }}
         activeOpacity={0.7}
       >

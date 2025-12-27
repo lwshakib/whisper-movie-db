@@ -61,3 +61,37 @@ export const useSearchHistory = create<SearchHistoryState>()(
     }
   )
 );
+
+export const FAVORITES_STORAGE_KEY = "favorites";
+
+interface FavoritesState {
+  favorites: string[];
+  toggleFavorite: (movieId: string) => void;
+  isFavorite: (movieId: string) => boolean;
+}
+
+export const useFavorites = create<FavoritesState>()(
+  persist(
+    (set, get) => ({
+      favorites: [],
+      toggleFavorite: (movieId: string) =>
+        set((state) => {
+          const isFav = state.favorites.includes(movieId);
+          if (isFav) {
+            return { favorites: state.favorites.filter((f) => f !== movieId) };
+          } else {
+            return { favorites: [...state.favorites, movieId] };
+          }
+        }),
+      isFavorite: (movieId: string) => get().favorites.includes(movieId),
+    }),
+    {
+      name: FAVORITES_STORAGE_KEY,
+      storage: createJSONStorage(() => ({
+        getItem: (name) => SecureStore.getItemAsync(name),
+        setItem: (name, value) => SecureStore.setItemAsync(name, value),
+        removeItem: (name) => SecureStore.deleteItemAsync(name),
+      })),
+    }
+  )
+);
