@@ -13,6 +13,7 @@ import {
 import Animated, {
   FadeInUp,
   interpolate,
+  SharedValue,
   useAnimatedScrollHandler,
   useAnimatedStyle,
   useSharedValue,
@@ -23,7 +24,7 @@ const { width, height } = Dimensions.get("window");
 const onboardingData = [
   {
     id: 1,
-    title: "Welcome to Cineverse",
+    title: "Welcome to Whisper",
     description:
       "Your ultimate destination for discovering movies, TV shows, and everything in between.",
     image:
@@ -54,7 +55,7 @@ const OnBoardingItem = ({
 }: {
   item: any;
   index: number;
-  scrollX: Animated.SharedValue<number>;
+  scrollX: SharedValue<number>;
 }) => {
   const animatedStyle = useAnimatedStyle(() => {
     const inputRange = [
