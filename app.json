@@ -4,14 +4,15 @@
     "slug": "whisper-movie-db",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icons/android/adaptive-icon.png",
+    "icon": "./assets/icons/ios/ios-light.png",
     "scheme": "whispermoviedb",
     "userInterfaceStyle": "automatic",
     "backgroundColor": "#000000",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "userInterfaceStyle": "automatic"
+      "userInterfaceStyle": "automatic",
+      "icon": "./assets/icons/ios/ios-light.png"
     },
     "android": {
       "adaptiveIcon": {
@@ -36,8 +37,7 @@
         "expo-splash-screen",
         {
           "image": "./assets/icons/splash/light-splash.png",
-          "imageWidth": 200,
-          "resizeMode": "contain",
+          "resizeMode": "cover",
           "backgroundColor": "#ffffff",
           "dark": {
             "image": "./assets/icons/splash/dark-splash.png",
