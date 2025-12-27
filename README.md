@@ -4,6 +4,16 @@
 
 **Whisper** is a modern, fast, and beautiful mobile application built with **React Native**, **Expo**, and **Tailwind CSS (NativeWind)**. It leverages the **TMDB (The Movie Database) API** to provide users with a comprehensive and immersive movie discovery experience.
 
+## 📱 App Demo
+
+<p align="center">
+  <img src="./assets/demo1.jpg" width="18%" alt="App Demo 1" />
+  <img src="./assets/demo2.jpg" width="18%" alt="App Demo 2" />
+  <img src="./assets/demo3.jpg" width="18%" alt="App Demo 3" />
+  <img src="./assets/demo4.jpg" width="18%" alt="App Demo 4" />
+  <img src="./assets/demo5.jpg" width="18%" alt="App Demo 5" />
+</p>
+
 ## ✨ Features
 
 - **🎬 Trending & Popular**: Discover what's hot right now in movies and TV.
