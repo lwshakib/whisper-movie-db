@@ -1,6 +1,14 @@
-import React, { useEffect, useState, useCallback } from "react";
+import FloatingBackButton from "@/components/FloatingBackButton";
+import {
+  fallbackMoviePoster,
+  fetchUpcomingMovies,
+  image500,
+} from "@/TMDB/config";
+import { useRouter } from "expo-router";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Dimensions,
   FlatList,
   Image,
   RefreshControl,
@@ -9,11 +17,24 @@ import {
   useColorScheme,
   View,
 } from "react-native";
-import { fallbackMoviePoster, fetchUpcomingMovies, image500 } from "@/TMDB/config";
-import { useRouter } from "expo-router";
-import FloatingBackButton from "@/components/FloatingBackButton";
+import Animated, { FadeInDown } from "react-native-reanimated";
 
-const SKELETON_ITEMS = Array.from({ length: 9 }); // 3 columns * 3 rows skeleton
+const { width } = Dimensions.get("window");
+const numColumns = 3;
+const gap = 12;
+const padding = 16;
+const availableWidth = width - padding * 2 - gap * (numColumns - 1);
+const itemWidth = availableWidth / numColumns;
+
+const SKELETON_ITEMS = Array.from({ length: 12 });
+
+const SkeletonItem = () => (
+  <View style={{ width: itemWidth, marginBottom: 16 }}>
+    <View className="h-[180px] bg-gray-800 animate-pulse rounded-xl mb-2" />
+    <View className="h-4 w-3/4 bg-gray-800 rounded mb-1 animate-pulse" />
+    <View className="h-3 w-1/2 bg-gray-800 rounded animate-pulse" />
+  </View>
+);
 
 export default function UpcomingMovies() {
   const [movies, setMovies] = useState<any[]>([]);
@@ -24,6 +45,7 @@ export default function UpcomingMovies() {
   const [hasMore, setHasMore] = useState(true);
   const router = useRouter();
   const colorScheme = useColorScheme();
+  const isDark = colorScheme === "dark";
 
   const loadMovies = useCallback(
     async (pageNumber: number, isRefresh = false) => {
@@ -51,8 +73,8 @@ export default function UpcomingMovies() {
         }
 
         setPage(pageNumber);
-      } catch (error) {
-        alert("Failed to load upcoming movies.");
+      } catch {
+        // Handle error silently
       } finally {
         setLoading(false);
         setRefreshing(false);
@@ -77,96 +99,107 @@ export default function UpcomingMovies() {
     }
   };
 
-  // Skeleton loader item component similar to TopRatedMovies screen
-  const SkeletonItem = () => (
-    <View className="rounded-xl overflow-hidden px-2">
-      <View className="h-60 bg-gray-200 dark:bg-gray-800 animate-pulse" />
-      <View className="p-2">
-        <View className="h-5 w-28 bg-gray-200 dark:bg-gray-700 rounded mb-2 animate-pulse" />
-        <View className="h-3 w-20 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-      </View>
-    </View>
+  const renderItem = ({ item, index }: { item: any; index: number }) => (
+    <Animated.View
+      entering={FadeInDown.duration(200)}
+      style={{ width: itemWidth, marginBottom: 16 }}
+    >
+      <TouchableOpacity
+        activeOpacity={0.7}
+        onPress={() =>
+          router.push({
+            pathname: "/movie/[id]",
+            params: { id: item.id.toString() },
+          })
+        }
+      >
+        <Image
+          source={{
+            uri: image500(item.poster_path) || fallbackMoviePoster,
+          }}
+          style={{
+            width: itemWidth,
+            height: itemWidth * 1.5,
+            borderRadius: 12,
+            backgroundColor: isDark ? "#1f1f1f" : "#e5e5e5",
+          }}
+          resizeMode="cover"
+        />
+        <View className="mt-2">
+          <Text
+            className="text-white text-xs font-bold"
+            style={{ color: isDark ? "#fff" : "#000" }}
+            numberOfLines={1}
+          >
+            {item.title}
+          </Text>
+          <Text className="text-gray-400 text-[10px]">
+            {item.release_date?.split("-")[0] || "N/A"}
+          </Text>
+        </View>
+      </TouchableOpacity>
+    </Animated.View>
   );
 
-  if (loading && !refreshing) {
-    return (
-      <View className="flex-1 bg-white dark:bg-black pt-4">
-        <FloatingBackButton />
-        <Text className="text-2xl font-bold mb-3 text-black dark:text-white px-4 mt-24">
-          Upcoming Movies
-        </Text>
-        <View
-          style={{
-            flexDirection: "row",
-            flexWrap: "wrap",
-            justifyContent: "space-between",
-            paddingHorizontal: 6,
-          }}
-        >
-          {SKELETON_ITEMS.map((_, index) => (
-            <View
-              key={index}
-              className="w-[120px] mb-4" // fixed width, margin bottom for spacing rows
-            >
-              <SkeletonItem />
-            </View>
-          ))}
-        </View>
-      </View>
-    );
-  }
-
   return (
-    <View className="flex-1 bg-white dark:bg-black pt-4">
+    <View
+      className="flex-1 pt-4"
+      style={{ backgroundColor: isDark ? "#000000" : "#ffffff" }}
+    >
       <FloatingBackButton />
-      <FlatList
-        data={movies}
-        keyExtractor={(item) => item.id.toString()}
-        numColumns={3}
-        columnWrapperStyle={{ justifyContent: "space-between", paddingHorizontal: 12 }}
-        contentContainerStyle={{ paddingBottom: 24 }}
-        ListHeaderComponent={
-          <Text className="text-2xl font-bold mb-3 text-black dark:text-white px-4 mt-24">
+
+      {loading && !refreshing ? (
+        <View className="px-4 mt-20">
+          <Text
+            className="text-2xl font-bold mb-6"
+            style={{ color: isDark ? "#fff" : "#000" }}
+          >
             Upcoming Movies
           </Text>
-        }
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-        onEndReached={onEndReached}
-        onEndReachedThreshold={0.5}
-        ListFooterComponent={
-          isFetchingMore ? (
-            <View className="py-4">
-              <ActivityIndicator
-                size="small"
-                color={colorScheme === "dark" ? "#fff" : "#007AFF"}
-              />
-            </View>
-          ) : null
-        }
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            activeOpacity={0.8}
-            onPress={() =>
-              router.push({
-                pathname: "/movie/[id]",
-                params: { id: item.id.toString() },
-              })
-            }
-            className="rounded-xl overflow-hidden w-[110px]"
-          >
-            <Image
-              source={{ uri: image500(item.poster_path) || fallbackMoviePoster }}
-              className="w-full h-44"
+          <View className="flex-row flex-wrap justify-between">
+            {SKELETON_ITEMS.map((_, index) => (
+              <SkeletonItem key={index} />
+            ))}
+          </View>
+        </View>
+      ) : (
+        <FlatList
+          data={movies}
+          keyExtractor={(item, index) => `${item.id}-${index}`}
+          numColumns={numColumns}
+          renderItem={renderItem}
+          columnWrapperStyle={{
+            justifyContent: "space-between",
+            paddingHorizontal: padding,
+          }}
+          contentContainerStyle={{ paddingBottom: 50, paddingTop: 80 }}
+          ListHeaderComponent={
+            <Text
+              className="text-2xl font-bold mb-6 px-4"
+              style={{ color: isDark ? "#fff" : "#000" }}
+            >
+              Upcoming Movies
+            </Text>
+          }
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={isDark ? "#fff" : "#000"}
+              colors={["#ef4444"]}
             />
-            <View className="p-2">
-              <Text className="text-white text-sm font-semibold" numberOfLines={1}>
-                {item.title}
-              </Text>
-              <Text className="text-gray-300 text-xs">{item.release_date}</Text>
-            </View>
-          </TouchableOpacity>
-        )}
-      />
+          }
+          onEndReached={onEndReached}
+          onEndReachedThreshold={2.0}
+          ListFooterComponent={
+            isFetchingMore ? (
+              <View className="py-6">
+                <ActivityIndicator size="small" color="#ef4444" />
+              </View>
+            ) : null
+          }
+        />
+      )}
     </View>
   );
 }

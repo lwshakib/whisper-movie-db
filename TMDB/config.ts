@@ -49,13 +49,13 @@ const apiCall = async (endpoint: string, params?: object) => {
 };
 
 export const fetchTrendingMovies = (page?: number) => {
-  return apiCall(trendingMoviesEndpoint+(page ? "&page="+page : ""));
+  return apiCall(trendingMoviesEndpoint + (page ? "&page=" + page : ""));
 };
 export const fetchUpcomingMovies = (page?: number) => {
-  return apiCall(upcomingMoviesEndpoint+(page ? "&page="+page : ""));
+  return apiCall(upcomingMoviesEndpoint + (page ? "&page=" + page : ""));
 };
 export const fetchTopRatedMovies = (page?: number) => {
-  return apiCall(topRatedMoviesEndpoint+(page ? "&page="+page : ""));
+  return apiCall(topRatedMoviesEndpoint + (page ? "&page=" + page : ""));
 };
 
 export const searchMovies = (params: { [key: string]: string | number }) => {
@@ -77,4 +77,11 @@ export const fetchPersonDetails = (personId: number | string) => {
 };
 export const fetchPersonMovies = (personId: number | string) => {
   return apiCall(personMoviesEndpoint(String(personId)));
+};
+
+const movieVideosEndpoint = (id: string) =>
+  `${MOVIE_DB_API_BASE_URL}/movie/${id}/videos?api_key=${MOVIE_DB_API_KEY}`;
+
+export const fetchMovieVideos = (movieId: number | string) => {
+  return apiCall(movieVideosEndpoint(String(movieId)));
 };

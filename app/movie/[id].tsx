@@ -3,6 +3,7 @@ import {
   fallbackPersonImage,
   fetchMovieCredits,
   fetchMovieDetails,
+  fetchMovieVideos,
   fetchSimilarMovies,
   image185,
   image500,
@@ -10,10 +11,12 @@ import {
 import FloatingBackButton from "@/components/FloatingBackButton";
 import { useFavorites } from "@/context";
 import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React, { useEffect, useState } from "react";
 import {
+  Dimensions,
   Image,
   ScrollView,
   Text,
@@ -21,15 +24,47 @@ import {
   useColorScheme,
   View,
 } from "react-native";
+import Animated, { FadeInDown } from "react-native-reanimated";
+import YoutubePlayer from "react-native-youtube-iframe";
+
+const { width, height } = Dimensions.get("window");
+
+const MovieInfoItem = ({
+  title,
+  value,
+}: {
+  title: string;
+  value: string | number;
+}) => (
+  <View className="mb-4 w-[48%] bg-neutral-50 dark:bg-neutral-900 p-3 rounded-lg border-0">
+    <Text className="text-gray-500 dark:text-gray-400 text-xs font-semibold uppercase tracking-wider mb-1">
+      {title}
+    </Text>
+    <Text className="text-gray-900 dark:text-gray-100 font-bold text-sm">
+      {value || "N/A"}
+    </Text>
+  </View>
+);
+
+const currencyFormatter = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 0,
+});
 
 export default function MovieDetails() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
   const colorScheme = useColorScheme();
+  const isDark = colorScheme === "dark";
+
   const [movie, setMovie] = useState<any>(null);
   const [credits, setCredits] = useState<any>(null);
   const [similar, setSimilar] = useState<any>(null);
+  const [videos, setVideos] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [trailerKey, setTrailerKey] = useState<string | null>(null);
 
   const { favorites, toggleFavorite } = useFavorites();
   const isFavorite = favorites.includes(id as string);
@@ -41,63 +76,35 @@ export default function MovieDetails() {
       fetchMovieDetails(id as string),
       fetchMovieCredits(id as string),
       fetchSimilarMovies(id as string),
-    ]).then(([movieRes, creditsRes, similarRes]) => {
+      fetchMovieVideos(id as string),
+    ]).then(([movieRes, creditsRes, similarRes, videosRes]) => {
       setMovie(movieRes);
       setCredits(creditsRes);
       setSimilar(similarRes);
+      setVideos(videosRes);
+
+      // Find official trailer
+      const trailer = videosRes?.results?.find(
+        (v: any) => v.site === "YouTube" && v.type === "Trailer"
+      );
+      // Fallback to Teaser or any video if trailer not found
+      const fallbackVideo = videosRes?.results?.find(
+        (v: any) => v.site === "YouTube"
+      );
+
+      setTrailerKey(trailer?.key || fallbackVideo?.key || null);
+
       setLoading(false);
     });
   }, [id]);
 
   if (loading) {
     return (
-      <View className="flex-1 bg-white dark:bg-black p-4">
-        {/* Poster Skeleton */}
-        <View className="w-full h-[600px] bg-gray-200 dark:bg-gray-800 rounded-xl mb-4 animate-pulse" />
-        {/* Title Skeleton */}
-        <View className="h-8 w-2/3 bg-gray-200 dark:bg-gray-700 rounded mb-2 animate-pulse" />
-        {/* Tagline Skeleton */}
-        <View className="h-5 w-1/2 bg-gray-200 dark:bg-gray-700 rounded mb-4 animate-pulse" />
-        {/* Genres Skeleton */}
-        <View className="flex-row mb-4">
-          <View className="h-6 w-16 bg-gray-200 dark:bg-gray-700 rounded-full mr-2 animate-pulse" />
-          <View className="h-6 w-12 bg-gray-200 dark:bg-gray-700 rounded-full mr-2 animate-pulse" />
-          <View className="h-6 w-20 bg-gray-200 dark:bg-gray-700 rounded-full mr-2 animate-pulse" />
+      <View className="flex-1 bg-white dark:bg-black p-4 items-center justify-center">
+        {/* Simple loading state or continue with skeleton if preferred, specifically user asked for data so cleaner loading is fine */}
+        <View className="w-full h-full justify-center items-center">
+          <View className="w-16 h-16 border-4 border-red-600 border-t-transparent rounded-full animate-spin" />
         </View>
-        {/* Overview Skeleton */}
-        <View className="h-4 w-full bg-gray-200 dark:bg-gray-700 rounded mb-2 animate-pulse" />
-        <View className="h-4 w-5/6 bg-gray-200 dark:bg-gray-700 rounded mb-2 animate-pulse" />
-        <View className="h-4 w-2/3 bg-gray-200 dark:bg-gray-700 rounded mb-6 animate-pulse" />
-        {/* Cast Skeleton */}
-        <Text className="text-xl font-bold text-gray-300 dark:text-gray-600 mb-2">
-          Cast
-        </Text>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          className="mb-6"
-        >
-          {[...Array(6)].map((_, i) => (
-            <View key={i} className="items-center mr-6 w-28">
-              <View className="w-28 h-28 rounded-full bg-gray-200 dark:bg-gray-800 mb-2 animate-pulse" />
-              <View className="h-4 w-20 bg-gray-200 dark:bg-gray-700 rounded mb-1 animate-pulse" />
-              <View className="h-3 w-16 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-            </View>
-          ))}
-        </ScrollView>
-        {/* Similar Movies Skeleton */}
-        <Text className="text-xl font-bold text-gray-300 dark:text-gray-600 mb-2">
-          Similar Movies
-        </Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          {[...Array(4)].map((_, i) => (
-            <View key={i} className="mr-4 w-36">
-              <View className="w-36 h-56 rounded-lg bg-gray-200 dark:bg-gray-800 mb-2 animate-pulse" />
-              <View className="h-4 w-28 bg-gray-200 dark:bg-gray-700 rounded mb-1 animate-pulse" />
-              <View className="h-3 w-16 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-            </View>
-          ))}
-        </ScrollView>
       </View>
     );
   }
@@ -116,100 +123,186 @@ export default function MovieDetails() {
     <View
       style={{
         flex: 1,
-        backgroundColor: colorScheme === "dark" ? "#000000" : "#ffffff",
+        backgroundColor: isDark ? "#000000" : "#ffffff",
       }}
     >
       <FloatingBackButton />
-      {/* Favorite Icon Top Right */}
       <TouchableOpacity
         onPress={() => toggleFavorite(id as string)}
-        style={{ position: "absolute", top: 40, right: 24, zIndex: 50 }}
-        activeOpacity={0.7}
+        className="absolute top-12 right-4 z-50 bg-white/20 backdrop-blur-md p-3 rounded-full"
       >
         <Ionicons
           name={isFavorite ? "heart" : "heart-outline"}
-          size={36}
+          size={28}
           color={isFavorite ? "#ef4444" : "#fff"}
         />
       </TouchableOpacity>
+
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{ paddingBottom: 32 }}
+        contentContainerStyle={{ paddingBottom: 50 }}
+        showsVerticalScrollIndicator={false}
       >
         <StatusBar hidden />
-        {/* Movie Details */}
-        <View className="">
+
+        {/* Header Image Section */}
+        <View className="w-full h-[500px] relative">
           <Image
             source={{ uri: image500(movie.poster_path) || fallbackMoviePoster }}
-            className="w-full h-[600px] rounded-xl mb-4 bg-gray-200 dark:bg-gray-800"
+            className="w-full h-full"
             resizeMode="cover"
           />
-          <Text className="text-2xl font-bold text-gray-900 dark:text-white mb-1">
+          <LinearGradient
+            colors={["transparent", isDark ? "#000000" : "#ffffff"]}
+            style={{
+              width: width,
+              height: height * 0.4,
+              position: "absolute",
+              bottom: 0,
+            }}
+            start={{ x: 0.5, y: 0 }}
+            end={{ x: 0.5, y: 1 }}
+          />
+        </View>
+
+        {/* Title & Tagline */}
+        <Animated.View
+          entering={FadeInDown.duration(400).springify()}
+          className="px-4 -mt-12 space-y-3"
+        >
+          <Text className="text-3xl font-black text-center text-gray-900 dark:text-white shadow-sm">
             {movie.title}
           </Text>
-          {!!movie.tagline && (
-            <Text className="italic text-gray-500 dark:text-gray-400 mb-2">
-              {movie.tagline}
+          {movie.tagline ? (
+            <Text className="text-gray-500 dark:text-gray-400 font-medium text-sm text-center italic">
+              "{movie.tagline}"
             </Text>
-          )}
-          <View className="flex-row flex-wrap mb-2">
-            {movie.genres?.map((g: any) => (
+          ) : null}
+
+          {/* Genres */}
+          <View className="flex-row justify-center mx-4 flex-wrap mt-2">
+            {movie.genres?.map((g: any, index: number) => (
               <View
-                key={g.id}
-                className="bg-gray-100 dark:bg-gray-700 rounded-full px-3 py-1 mr-2 mb-2"
+                key={index}
+                className="px-4 py-1 rounded-full bg-neutral-200 dark:bg-neutral-800 mr-2 mb-2"
               >
-                <Text className="text-xs text-gray-800 dark:text-gray-200">
+                <Text className="text-gray-600 dark:text-gray-300 text-xs font-semibold">
                   {g.name}
                 </Text>
               </View>
             ))}
           </View>
-          <Text className="text-gray-700 dark:text-gray-300 mb-2">
-            Release: {movie.release_date} | Runtime: {movie.runtime} min |
-            Rating: {movie.vote_average}
-          </Text>
-          <Text className="text-gray-800 dark:text-gray-200 mb-4">
+
+          {/* Overview */}
+          <Text className="text-gray-600 dark:text-neutral-300 font-normal leading-6 text-base text-center mt-2 mx-2">
             {movie.overview}
           </Text>
-          <Text className="font-semibold text-gray-900 dark:text-white mb-1">
-            Production
+        </Animated.View>
+
+        {/* Trailer */}
+        {trailerKey && (
+          <View className="mt-8 px-4">
+            <Text className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+              Official Trailer
+            </Text>
+            <View className="rounded-2xl overflow-hidden bg-black shadow-lg">
+              <YoutubePlayer height={220} play={false} videoId={trailerKey} />
+            </View>
+          </View>
+        )}
+
+        {/* Info Grid */}
+        <View className="mt-8 px-4">
+          <Text className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+            Information
           </Text>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            className="mb-2"
-          >
-            {movie.production_companies?.map((pc: any) => (
-              <View key={pc.id} className="items-center mr-4">
-                <Image
-                  source={{
-                    uri: image185(pc.logo_path) || fallbackMoviePoster,
-                  }}
-                  className="w-10 h-10 mb-1 bg-gray-200 dark:bg-gray-800 rounded"
-                  resizeMode="contain"
-                />
-                <Text
-                  className="text-xs text-gray-700 dark:text-gray-200 w-16 text-center"
-                  numberOfLines={2}
-                >
-                  {pc.name}
-                </Text>
-              </View>
-            ))}
-          </ScrollView>
+          <View className="flex-row flex-wrap justify-between">
+            <MovieInfoItem title="Status" value={movie.status} />
+            <MovieInfoItem
+              title="Release Date"
+              value={movie.release_date?.split("-").reverse().join("/")}
+            />
+            <MovieInfoItem title="Runtime" value={`${movie.runtime} min`} />
+            <MovieInfoItem
+              title="Rating"
+              value={`${movie.vote_average?.toFixed(1)} / 10`}
+            />
+            <MovieInfoItem
+              title="Budget"
+              value={
+                movie.budget > 0
+                  ? currencyFormatter.format(movie.budget)
+                  : "Unknown"
+              }
+            />
+            <MovieInfoItem
+              title="Revenue"
+              value={
+                movie.revenue > 0
+                  ? currencyFormatter.format(movie.revenue)
+                  : "Unknown"
+              }
+            />
+            <MovieInfoItem
+              title="Original Language"
+              value={movie.original_language?.toUpperCase()}
+            />
+            <MovieInfoItem
+              title="Popularity"
+              value={movie.popularity?.toFixed(0)}
+            />
+          </View>
         </View>
 
-        {/* Cast Section */}
-        {credits?.cast?.length > 0 && (
+        {/* Production Companies */}
+        {movie.production_companies?.length > 0 && (
           <View className="mt-4 px-4">
-            <Text className="text-xl font-bold text-gray-900 dark:text-white mb-2">
-              Cast
+            <Text className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+              Production
             </Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              {credits.cast.slice(0, 12).map((actor: any) => (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              className="pl-1"
+            >
+              {movie.production_companies.map((pc: any) => (
+                <View key={pc.id} className="mr-6 items-center">
+                  <View className="w-20 h-20 bg-neutral-100 dark:bg-neutral-800 rounded-xl justify-center items-center p-2 mb-2">
+                    <Image
+                      source={{
+                        uri: image185(pc.logo_path) || fallbackMoviePoster,
+                      }}
+                      className="w-16 h-16"
+                      resizeMode="contain"
+                    />
+                  </View>
+                  <Text
+                    className="text-xs text-gray-500 dark:text-gray-400 w-20 text-center font-medium"
+                    numberOfLines={2}
+                  >
+                    {pc.name}
+                  </Text>
+                </View>
+              ))}
+            </ScrollView>
+          </View>
+        )}
+
+        {/* Cast */}
+        {credits?.cast?.length > 0 && (
+          <View className="mt-8">
+            <Text className="text-xl font-bold text-gray-900 dark:text-white px-4 mb-4">
+              Top Cast
+            </Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ paddingHorizontal: 16 }}
+            >
+              {credits.cast.map((actor: any, index: number) => (
                 <TouchableOpacity
-                  key={actor.id}
-                  className="items-center mr-6 w-28"
+                  key={`${actor.id}-${index}`}
+                  className="mr-4 items-center"
                   onPress={() =>
                     router.push({
                       pathname: "/person/[id]",
@@ -217,21 +310,24 @@ export default function MovieDetails() {
                     })
                   }
                 >
-                  <Image
-                    source={{
-                      uri: image185(actor.profile_path) || fallbackPersonImage,
-                    }}
-                    className="w-28 h-28 rounded-full mb-2 bg-gray-200 dark:bg-gray-800"
-                    resizeMode="cover"
-                  />
+                  <View className="rounded-full mb-2">
+                    <Image
+                      source={{
+                        uri:
+                          image185(actor.profile_path) || fallbackPersonImage,
+                      }}
+                      className="w-20 h-20 rounded-full bg-neutral-200 dark:bg-neutral-800"
+                      resizeMode="cover"
+                    />
+                  </View>
                   <Text
-                    className="font-semibold text-sm text-gray-900 dark:text-white text-center"
+                    className="text-xs font-bold text-gray-900 dark:text-white w-24 text-center"
                     numberOfLines={1}
                   >
                     {actor.name}
                   </Text>
                   <Text
-                    className="text-xs text-gray-500 dark:text-gray-400 text-center"
+                    className="text-[10px] text-gray-500 w-24 text-center"
                     numberOfLines={1}
                   >
                     {actor.character}
@@ -242,17 +338,21 @@ export default function MovieDetails() {
           </View>
         )}
 
-        {/* Similar Movies Section */}
+        {/* Similar Movies */}
         {similar?.results?.length > 0 && (
-          <View className="mt-4 px-4">
-            <Text className="text-xl font-bold text-gray-900 dark:text-white mb-2">
-              Similar Movies
+          <View className="mt-8 mb-8">
+            <Text className="text-xl font-bold text-gray-900 dark:text-white px-4 mb-4">
+              You might also like
             </Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              {similar.results.slice(0, 10).map((m: any) => (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ paddingHorizontal: 16 }}
+            >
+              {similar.results.map((m: any, index: number) => (
                 <TouchableOpacity
-                  key={m.id}
-                  className="mr-4 w-36"
+                  key={`${m.id}-${index}`}
+                  className="mr-4 w-32"
                   onPress={() =>
                     router.push({
                       pathname: "/movie/[id]",
@@ -264,17 +364,14 @@ export default function MovieDetails() {
                     source={{
                       uri: image185(m.poster_path) || fallbackMoviePoster,
                     }}
-                    className="w-36 h-56 rounded-lg mb-2 bg-gray-200 dark:bg-gray-800"
+                    className="w-32 h-48 rounded-xl mb-2 bg-gray-800"
                     resizeMode="cover"
                   />
                   <Text
-                    className="text-sm text-gray-900 dark:text-white font-semibold"
-                    numberOfLines={2}
+                    className="text-xs font-bold text-gray-900 dark:text-white"
+                    numberOfLines={1}
                   >
                     {m.title}
-                  </Text>
-                  <Text className="text-xs text-gray-500 dark:text-gray-400">
-                    {m.release_date?.slice(0, 4)}
                   </Text>
                 </TouchableOpacity>
               ))}

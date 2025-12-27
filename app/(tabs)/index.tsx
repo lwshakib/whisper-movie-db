@@ -193,14 +193,14 @@ export default function Tab() {
           backgroundColor: colorScheme === "dark" ? "#000000" : "#ffffff",
         }}
       >
-        <View className="w-full h-[550px] bg-gray-200 dark:bg-gray-900 animate-pulse" />
+        <View className="w-full h-[550px] bg-neutral-100 dark:bg-neutral-900 animate-pulse" />
         <View className="p-4">
-          <View className="h-8 w-48 bg-gray-200 dark:bg-gray-900 rounded-lg mb-6" />
+          <View className="h-8 w-48 bg-neutral-200 dark:bg-neutral-800 rounded-lg mb-6" />
           <View className="flex-row">
             {[1, 2, 3].map((i) => (
               <View
                 key={i}
-                className="w-40 h-60 bg-gray-200 dark:bg-gray-900 rounded-2xl mr-4"
+                className="w-40 h-60 bg-neutral-200 dark:bg-neutral-800 rounded-2xl mr-4"
               />
             ))}
           </View>

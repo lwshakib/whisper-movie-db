@@ -66,7 +66,7 @@ export default function RootLayout() {
     );
   }
 
-  if (isOnBoarding) {
+  if (!isOnBoarding) {
     return (
       <>
         <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />

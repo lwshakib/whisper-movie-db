@@ -1,178 +1,197 @@
 import { useOnBoardingState } from "@/context";
-import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
-import React from "react";
+import React, { useRef, useState } from "react";
 import {
   Dimensions,
-  Platform,
+  FlatList,
+  Image,
   StatusBar,
-  StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
-import Onboarding from "react-native-onboarding-swiper";
+import Animated, {
+  FadeInUp,
+  interpolate,
+  useAnimatedScrollHandler,
+  useAnimatedStyle,
+  useSharedValue,
+} from "react-native-reanimated";
 
 const { width, height } = Dimensions.get("window");
 
-const pages = [
+const onboardingData = [
   {
+    id: 1,
     title: "Welcome to Cineverse",
-    subtitle: "Discover thousands of movies and TV shows at your fingertips.",
-    imageUrl:
-      "https://image.tmdb.org/t/p/w600_and_h900_bestv2/gKkl37BQuKTanygYQG1pyYgLVgf.jpg",
+    description:
+      "Your ultimate destination for discovering movies, TV shows, and everything in between.",
+    image:
+      "https://image.tmdb.org/t/p/w600_and_h900_face/cjXLrg4R7FRPFafvuQ3SSznQOd9.jpg",
   },
   {
-    title: "Get Started",
-    subtitle:
-      "Join millions of movie lovers and start your cinematic journey today.",
-    imageUrl:
-      "https://image.tmdb.org/t/p/w600_and_h900_bestv2/8Gxv8gSFCU0XGDykEGv7zR1n2ua.jpg",
+    id: 2,
+    title: "Discover & Explore",
+    description:
+      "Search through millions of movies, view details, trailers, and cast information instantly.",
+    image:
+      "https://image.tmdb.org/t/p/w600_and_h900_face/cVxVGwHce6xnW8UaVUggaPXbmoE.jpg",
+  },
+  {
+    id: 3,
+    title: "Track Favorites",
+    description:
+      "Save movies to your favorites list and define your personal cinematic taste.",
+    image:
+      "https://image.tmdb.org/t/p/w600_and_h900_face/2zmTngn1tYC1AvfnrFLhxeD82hz.jpg",
   },
 ];
 
-interface DoneButtonProps {
-  onPress: () => void;
-}
+const OnBoardingItem = ({
+  item,
+  index,
+  scrollX,
+}: {
+  item: any;
+  index: number;
+  scrollX: Animated.SharedValue<number>;
+}) => {
+  const animatedStyle = useAnimatedStyle(() => {
+    const inputRange = [
+      (index - 1) * width,
+      index * width,
+      (index + 1) * width,
+    ];
 
-const DoneButton: React.FC<DoneButtonProps> = ({ onPress }) => (
-  <TouchableOpacity onPress={onPress} style={styles.doneButton}>
-    <Text style={styles.doneButtonText}>Get Started</Text>
-  </TouchableOpacity>
-);
+    // Animate Opacity: fade in when centered, fade out when scrolling away
+    const opacity = interpolate(scrollX.value, inputRange, [0, 1, 0]);
 
-interface DotComponentProps {
-  selected: boolean;
-}
+    // Animate TranslateY: Move up when entering, move down when leaving
+    const translateY = interpolate(scrollX.value, inputRange, [100, 0, 100]);
 
-const DotComponent: React.FC<DotComponentProps> = ({ selected }) => (
-  <View style={[styles.dot, selected && styles.selectedDot]} />
-);
+    return {
+      opacity,
+      transform: [{ translateY }],
+    };
+  });
+
+  return (
+    <View style={{ width, height }}>
+      <Image
+        source={{ uri: item.image }}
+        style={{ width: "100%", height: "100%" }}
+        resizeMode="cover"
+      />
+      <LinearGradient
+        colors={["transparent", "rgba(0,0,0,0.6)", "rgba(0,0,0,0.95)"]}
+        style={{
+          position: "absolute",
+          bottom: 0,
+          width: "100%",
+          height: "60%",
+          justifyContent: "flex-end",
+          paddingBottom: 150,
+          paddingHorizontal: 24,
+        }}
+      >
+        <Animated.View style={animatedStyle}>
+          <Text className="text-white text-4xl font-black text-center mb-4">
+            {item.title}
+          </Text>
+          <Text className="text-gray-300 text-base text-center leading-6 font-medium">
+            {item.description}
+          </Text>
+        </Animated.View>
+      </LinearGradient>
+    </View>
+  );
+};
 
 export default function OnBoarding() {
   const { setIsOnBoarding } = useOnBoardingState();
+  const flatListRef = useRef<FlatList>(null);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const scrollX = useSharedValue(0);
 
-  const handleOnboardingComplete = () => {
-    setIsOnBoarding(false);
+  const scrollHandler = useAnimatedScrollHandler((event) => {
+    scrollX.value = event.contentOffset.x;
+  });
+
+  const handleNext = () => {
+    if (currentIndex < onboardingData.length - 1) {
+      flatListRef.current?.scrollToIndex({
+        index: currentIndex + 1,
+        animated: true,
+      });
+      setCurrentIndex(currentIndex + 1);
+    } else {
+      setIsOnBoarding(false);
+    }
+  };
+
+  const onMomentumScrollEnd = (event: any) => {
+    const newIndex = Math.round(event.nativeEvent.contentOffset.x / width);
+    setCurrentIndex(newIndex);
   };
 
   return (
-    <View style={styles.container}>
+    <View className="flex-1 bg-black">
       <StatusBar
-        barStyle="light-content"
         translucent
         backgroundColor="transparent"
-        hidden
+        barStyle="light-content"
       />
-      <LinearGradient colors={["#1a1a1a", "#000"]} style={styles.gradient} />
-      <Onboarding
-        onDone={handleOnboardingComplete}
-        onSkip={handleOnboardingComplete}
-        DoneButtonComponent={(props) => (
-          <DoneButton {...props} onPress={handleOnboardingComplete} />
+
+      <Animated.FlatList
+        ref={flatListRef}
+        data={onboardingData}
+        renderItem={({ item, index }) => (
+          <OnBoardingItem item={item} index={index} scrollX={scrollX} />
         )}
-        DotComponent={DotComponent}
-        pages={pages.map((page) => ({
-          backgroundColor: "transparent",
-          image: (
-            <View style={styles.imageContainer}>
-              <Image
-                source={{ uri: page.imageUrl }}
-                style={styles.image}
-                contentFit="cover"
-                transition={500}
-              />
-            </View>
-          ),
-          title: page.title,
-          subtitle: page.subtitle,
-          titleStyles: styles.title,
-          subTitleStyles: styles.subtitle,
-        }))}
-        containerStyles={styles.onboardingContainer}
-        imageContainerStyles={styles.imageWrapper}
+        keyExtractor={(item) => item.id.toString()}
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        onScroll={scrollHandler}
+        scrollEventThrottle={16}
+        onMomentumScrollEnd={onMomentumScrollEnd}
+        bounces={false}
       />
+
+      {/* Footer / Controls */}
+      <View className="absolute bottom-12 w-full px-6 flex-row justify-between items-center z-50">
+        {/* Paginator */}
+        <View className="flex-row space-x-2">
+          {onboardingData.map((_, index) => {
+            const isActive = index === currentIndex;
+            return (
+              <View
+                key={index}
+                className={`h-2 rounded-full transition-all duration-300 ${
+                  isActive ? "w-8 bg-red-600" : "w-2 bg-gray-500"
+                }`}
+              />
+            );
+          })}
+        </View>
+
+        {/* Button */}
+        <TouchableOpacity
+          onPress={handleNext}
+          className="bg-red-600 py-3 px-8 rounded-full shadow-lg shadow-red-900 overflow-hidden"
+          activeOpacity={0.8}
+        >
+          <Animated.Text
+            key={currentIndex} // Re-animate text on index change
+            entering={FadeInUp.duration(300)} // Subtle entry for button text
+            className="text-white font-bold text-lg uppercase tracking-wide"
+          >
+            {currentIndex === onboardingData.length - 1
+              ? "Get Started"
+              : "Next"}
+          </Animated.Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#000",
-  },
-  gradient: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    top: 0,
-    bottom: 0,
-  },
-  onboardingContainer: {
-    paddingTop: (StatusBar.currentHeight || 0) + 20,
-  },
-  imageWrapper: {
-    paddingBottom: 20,
-  },
-  imageContainer: {
-    width: width * 0.8,
-    height: height * 0.5,
-    borderRadius: 20,
-    overflow: "hidden",
-    ...Platform.select({
-      ios: {
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 10 },
-        shadowOpacity: 0.5,
-        shadowRadius: 20,
-      },
-      android: {
-        elevation: 10,
-      },
-    }),
-  },
-  image: {
-    width: "100%",
-    height: "100%",
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: "bold",
-    color: "#fff",
-    textAlign: "center",
-    marginHorizontal: 20,
-    marginBottom: 10,
-    fontFamily: Platform.OS === "ios" ? "System" : "sans-serif-medium",
-  },
-  subtitle: {
-    fontSize: 16,
-    color: "#A0A0A0",
-    textAlign: "center",
-    marginHorizontal: 30,
-    lineHeight: 24,
-    fontFamily: Platform.OS === "ios" ? "System" : "sans-serif",
-  },
-  doneButton: {
-    backgroundColor: "#E50914",
-    paddingVertical: 15,
-    paddingHorizontal: 25,
-    borderRadius: 30,
-    marginRight: 15,
-  },
-  doneButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "bold",
-  },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: "#555",
-    marginHorizontal: 4,
-  },
-  selectedDot: {
-    backgroundColor: "#E50914",
-    width: 20,
-  },
-});

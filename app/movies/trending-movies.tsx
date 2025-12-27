@@ -1,28 +1,38 @@
-import React, { useEffect, useState, useCallback } from "react";
+import FloatingBackButton from "@/components/FloatingBackButton";
+import {
+  fallbackMoviePoster,
+  fetchTrendingMovies,
+  image500,
+} from "@/TMDB/config";
+import { useRouter } from "expo-router";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Dimensions,
   FlatList,
   Image,
   RefreshControl,
   Text,
   TouchableOpacity,
+  useColorScheme,
   View,
 } from "react-native";
-import { fallbackMoviePoster, fetchTrendingMovies, image500 } from "@/TMDB/config";
-import { useRouter } from "expo-router";
+import Animated, { FadeInDown } from "react-native-reanimated";
 
-import FloatingBackButton from "@/components/FloatingBackButton";
+const { width } = Dimensions.get("window");
+const numColumns = 3;
+const gap = 12;
+const padding = 16;
+const availableWidth = width - padding * 2 - gap * (numColumns - 1);
+const itemWidth = availableWidth / numColumns;
 
-const SKELETON_ITEMS = Array.from({ length: 9 }); // 3 columns * 3 rows of placeholders
+const SKELETON_ITEMS = Array.from({ length: 12 });
 
-// Simplified SkeletonItem using native-wind and animate-pulse
 const SkeletonItem = () => (
-  <View className="rounded-xl overflow-hidden w-[110px] px-2 mb-4">
-    <View className="h-44 bg-gray-700 dark:bg-gray-800 animate-pulse rounded" />
-    <View className="p-2">
-      <View className="h-4 w-28 bg-gray-700 dark:bg-gray-700 rounded mb-2 animate-pulse" />
-      <View className="h-3 w-20 bg-gray-700 dark:bg-gray-700 rounded animate-pulse" />
-    </View>
+  <View style={{ width: itemWidth, marginBottom: 16 }}>
+    <View className="h-[180px] bg-gray-800 animate-pulse rounded-xl mb-2" />
+    <View className="h-4 w-3/4 bg-gray-800 rounded mb-1 animate-pulse" />
+    <View className="h-3 w-1/2 bg-gray-800 rounded animate-pulse" />
   </View>
 );
 
@@ -34,6 +44,8 @@ export default function TrendingMovies() {
   const [isFetchingMore, setIsFetchingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const router = useRouter();
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === "dark";
 
   const loadMovies = useCallback(
     async (pageNumber: number, isRefresh = false) => {
@@ -62,7 +74,7 @@ export default function TrendingMovies() {
 
         setPage(pageNumber);
       } catch {
-        alert("Failed to load movies.");
+        // Handle error silently or simplistic alert
       } finally {
         setLoading(false);
         setRefreshing(false);
@@ -87,66 +99,107 @@ export default function TrendingMovies() {
     }
   };
 
-  if (loading && !refreshing) {
-    return (
-      <View className="flex-1 bg-black pt-24 px-4">
-        <FloatingBackButton />
-        <Text className="text-white text-2xl font-bold mb-6 mt-4" >Trending Movies</Text>
-        <View className="flex-row flex-wrap justify-between">
-          {SKELETON_ITEMS.map((_, index) => (
-            <SkeletonItem key={index} />
-          ))}
+  const renderItem = ({ item, index }: { item: any; index: number }) => (
+    <Animated.View
+      entering={FadeInDown.duration(200)}
+      style={{ width: itemWidth, marginBottom: 16 }}
+    >
+      <TouchableOpacity
+        activeOpacity={0.7}
+        onPress={() =>
+          router.push({
+            pathname: "/movie/[id]",
+            params: { id: item.id.toString() },
+          })
+        }
+      >
+        <Image
+          source={{
+            uri: image500(item.poster_path) || fallbackMoviePoster,
+          }}
+          style={{
+            width: itemWidth,
+            height: itemWidth * 1.5,
+            borderRadius: 12,
+            backgroundColor: isDark ? "#1f1f1f" : "#e5e5e5",
+          }}
+          resizeMode="cover"
+        />
+        <View className="mt-2">
+          <Text
+            className="text-white text-xs font-bold"
+            style={{ color: isDark ? "#fff" : "#000" }}
+            numberOfLines={1}
+          >
+            {item.title}
+          </Text>
+          <Text className="text-gray-400 text-[10px]">
+            {item.release_date?.split("-")[0] || "N/A"}
+          </Text>
         </View>
-      </View>
-    );
-  }
+      </TouchableOpacity>
+    </Animated.View>
+  );
 
   return (
-    <View className="flex-1 bg-black pt-4">
+    <View
+      className="flex-1 pt-4"
+      style={{ backgroundColor: isDark ? "#000000" : "#ffffff" }}
+    >
       <FloatingBackButton />
-      <FlatList
-        data={movies}
-        keyExtractor={(item) => item.id.toString()}
-        numColumns={3}
-        columnWrapperStyle={{ justifyContent: "space-between", paddingHorizontal: 12 }}
-        contentContainerStyle={{ paddingBottom: 24, paddingTop: 24 }}
-        ListHeaderComponent={
-          <Text className="text-white text-2xl font-bold mb-3 px-4 mt-20">Trending Movies</Text>
-        }
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#fff" />}
-        onEndReached={onEndReached}
-        onEndReachedThreshold={0.5}
-        ListFooterComponent={
-          isFetchingMore ? (
-            <View className="py-4">
-              <ActivityIndicator size="small" color="#fff" />
-            </View>
-          ) : null
-        }
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            activeOpacity={0.8}
-            onPress={() =>
-              router.push({
-                pathname: "/movie/[id]",
-                params: { id: item.id.toString() },
-              })
-            }
-            className="rounded-xl overflow-hidden w-[110px] mb-4"
+
+      {loading && !refreshing ? (
+        <View className="px-4 mt-20">
+          <Text
+            className="text-2xl font-bold mb-6"
+            style={{ color: isDark ? "#fff" : "#000" }}
           >
-            <Image
-              source={{ uri: image500(item.poster_path) || fallbackMoviePoster }}
-              className="w-full h-44"
+            Trending Movies
+          </Text>
+          <View className="flex-row flex-wrap justify-between">
+            {SKELETON_ITEMS.map((_, index) => (
+              <SkeletonItem key={index} />
+            ))}
+          </View>
+        </View>
+      ) : (
+        <FlatList
+          data={movies}
+          keyExtractor={(item, index) => `${item.id}-${index}`}
+          numColumns={numColumns}
+          renderItem={renderItem}
+          columnWrapperStyle={{
+            justifyContent: "space-between",
+            paddingHorizontal: padding,
+          }}
+          contentContainerStyle={{ paddingBottom: 50, paddingTop: 80 }}
+          ListHeaderComponent={
+            <Text
+              className="text-2xl font-bold mb-6 px-4"
+              style={{ color: isDark ? "#fff" : "#000" }}
+            >
+              Trending Movies
+            </Text>
+          }
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={isDark ? "#fff" : "#000"}
+              colors={["#ef4444"]}
             />
-            <View className="p-2 bg-[#121212]">
-              <Text className="text-white text-sm font-semibold" numberOfLines={1}>
-                {item.title}
-              </Text>
-              <Text className="text-gray-400 text-xs">{item.release_date}</Text>
-            </View>
-          </TouchableOpacity>
-        )}
-      />
+          }
+          onEndReached={onEndReached}
+          onEndReachedThreshold={2.0}
+          ListFooterComponent={
+            isFetchingMore ? (
+              <View className="py-6">
+                <ActivityIndicator size="small" color="#ef4444" />
+              </View>
+            ) : null
+          }
+        />
+      )}
     </View>
   );
 }

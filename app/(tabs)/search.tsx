@@ -4,14 +4,26 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import {
+  ActivityIndicator,
+  Dimensions,
   FlatList,
   Image,
+  ScrollView,
   Text,
   TextInput,
   TouchableOpacity,
   useColorScheme,
   View,
 } from "react-native";
+import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+
+const { width } = Dimensions.get("window");
+const numColumns = 3;
+const gap = 12;
+const padding = 16;
+const availableWidth = width - padding * 2 - gap * (numColumns - 1);
+const itemWidth = availableWidth / numColumns;
 
 interface Movie {
   id: number;
@@ -24,52 +36,75 @@ export default function Search() {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<Movie[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [searched, setSearched] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
 
   const { history, addToHistory, removeFromHistory, clearHistory } =
     useSearchHistory();
   const router = useRouter();
   const colorScheme = useColorScheme();
+  const insets = useSafeAreaInsets();
+  const inputRef = useRef<TextInput>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const latestQueryId = useRef<number>(0);
 
-  // 🔄 Manual refetch
-  const refetch = async () => {
-    if (!query.trim()) {
+  const isDark = colorScheme === "dark";
+  const theme = {
+    bg: isDark ? "#000000" : "#ffffff",
+    text: isDark ? "#ffffff" : "#000000",
+    textSecondary: isDark ? "#9ca3af" : "#6b7280",
+    inputBg: isDark ? "#1C1C1E" : "#F2F2F7",
+    primary: "#ef4444",
+    border: isDark ? "#2C2C2E" : "#E5E5EA",
+  };
+
+  const performSearch = async (text: string, pageNum = 1) => {
+    if (!text.trim()) {
       setResults([]);
       setSearched(false);
+      setLoading(false);
+      setPage(1);
       return;
     }
 
     const queryId = Date.now();
     latestQueryId.current = queryId;
-    setLoading(true);
-    setSearched(false);
+
+    if (pageNum === 1) {
+      setLoading(true);
+      setSearched(true);
+    } else {
+      setLoadingMore(true);
+    }
 
     try {
-      const res = await searchMovies({ query });
+      const res = await searchMovies({ query: text, page: pageNum });
       if (latestQueryId.current === queryId) {
-        setResults(res.results || []);
-        setSearched(true);
-        addToHistory(query);
+        if (pageNum === 1) {
+          setResults(res.results || []);
+          if (res.results?.length > 0) {
+            addToHistory(text);
+          }
+        } else {
+          setResults((prev) => [...prev, ...(res.results || [])]);
+        }
+        setHasMore(pageNum < (res.total_pages || 0));
+        setPage(pageNum);
       }
-    } catch (e) {
-      if (latestQueryId.current === queryId) {
-        setResults([]);
-        setSearched(true);
-      }
+    } catch (error) {
+      console.error(error);
     } finally {
       if (latestQueryId.current === queryId) {
         setLoading(false);
+        setLoadingMore(false);
       }
     }
   };
 
-  // ✅ Debounced Search Logic
   useEffect(() => {
     if (!query.trim()) {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
       setResults([]);
       setSearched(false);
       setLoading(false);
@@ -79,213 +114,233 @@ export default function Search() {
     if (debounceRef.current) clearTimeout(debounceRef.current);
 
     debounceRef.current = setTimeout(() => {
-      const queryId = Date.now();
-      latestQueryId.current = queryId;
-
-      setLoading(true);
-      setSearched(false);
-
-      searchMovies({ query })
-        .then((res) => {
-          if (latestQueryId.current === queryId) {
-            setResults(res.results || []);
-            setSearched(true);
-            if (res.results?.length > 0) {
-              addToHistory(query);
-            }
-          }
-        })
-        .catch(() => {
-          if (latestQueryId.current === queryId) {
-            setResults([]);
-            setSearched(true);
-          }
-        })
-        .finally(() => {
-          if (latestQueryId.current === queryId) {
-            setLoading(false);
-          }
-        });
-    }, 800);
+      performSearch(query);
+    }, 600);
 
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
   }, [query]);
 
+  const clearSearch = () => {
+    setQuery("");
+    setResults([]);
+    setSearched(false);
+    inputRef.current?.focus();
+  };
+
+  const renderItem = ({ item, index }: { item: Movie; index: number }) => (
+    <Animated.View
+      entering={FadeInDown.duration(200)} // Removed heavy spring/delay logic
+      style={{ width: itemWidth, marginBottom: 16 }}
+    >
+      <TouchableOpacity
+        activeOpacity={0.7}
+        onPress={() =>
+          router.push({
+            pathname: "/movie/[id]",
+            params: { id: item.id.toString() },
+          })
+        }
+      >
+        <Image
+          source={{
+            uri: item.poster_path
+              ? `https://image.tmdb.org/t/p/w342${item.poster_path}`
+              : "https://via.placeholder.com/300x450",
+          }}
+          style={{
+            width: itemWidth,
+            height: itemWidth * 1.5,
+            borderRadius: 12,
+            backgroundColor: theme.inputBg,
+          }}
+          resizeMode="cover"
+        />
+        <Text
+          numberOfLines={1}
+          className="mt-2 text-xs font-bold"
+          style={{ color: theme.text }}
+        >
+          {item.title}
+        </Text>
+        <Text className="text-[10px]" style={{ color: theme.textSecondary }}>
+          {item.release_date?.split("-")[0] || "N/A"}
+        </Text>
+      </TouchableOpacity>
+    </Animated.View>
+  );
+
   return (
     <View
-      style={{
-        flex: 1,
-        backgroundColor: colorScheme === "dark" ? "#000000" : "#ffffff",
-      }}
-      className="items-center px-4"
+      style={{ flex: 1, backgroundColor: theme.bg, paddingTop: insets.top }}
     >
-      {/* 🔍 Search Bar */}
-      <View className="w-full mb-4 flex-row items-center relative mt-20">
-        <TextInput
-          className="flex-1 h-12 border border-gray-300 dark:border-gray-700 rounded-lg px-4 text-base bg-gray-100 dark:bg-gray-900 text-black dark:text-white pr-10"
-          placeholder="Search movies..."
-          placeholderTextColor="#888"
-          value={query}
-          onChangeText={setQuery}
-          returnKeyType="search"
-          onSubmitEditing={refetch}
-        />
-        {query.trim().length > 0 && (
-          <TouchableOpacity
-            onPress={() => setQuery("")}
-            className="absolute right-3 top-0 h-12 justify-center items-center"
-            style={{ width: 36 }}
-            activeOpacity={0.7}
-          >
-            <Ionicons name="close" size={22} color="#4B5563" />
-          </TouchableOpacity>
-        )}
+      <View className="px-4 pb-4">
+        <Text
+          className="text-3xl font-bold mb-4 mt-2"
+          style={{ color: theme.text }}
+        >
+          Search
+        </Text>
+        <View
+          className="flex-row items-center h-12 rounded-xl px-3"
+          style={{ backgroundColor: theme.inputBg }}
+        >
+          <Ionicons name="search" size={20} color={theme.textSecondary} />
+          <TextInput
+            ref={inputRef}
+            className="flex-1 ml-2 font-medium"
+            style={{ color: theme.text, fontSize: 16 }}
+            placeholder="Search for movies, TV shows..."
+            placeholderTextColor={theme.textSecondary}
+            value={query}
+            onChangeText={setQuery}
+            returnKeyType="search"
+            selectionColor={theme.primary}
+            onSubmitEditing={() => performSearch(query)}
+          />
+          {query.length > 0 && (
+            <TouchableOpacity onPress={clearSearch}>
+              <Ionicons
+                name="close-circle"
+                size={20}
+                color={theme.textSecondary}
+              />
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
 
-      {/* Show search history when query is empty */}
-      {query.trim() === "" && (
-        <View className="w-full mb-4">
-          {history.length > 0 && (
-            <View className="flex-row items-center justify-between mb-2">
-              <Text className="text-lg font-semibold text-black dark:text-white">
-                Recent Searches
-              </Text>
-              <TouchableOpacity
-                onPress={clearHistory}
-                className="px-2 py-1"
-                activeOpacity={0.7}
-              >
-                <Text className="text-xs text-red-600 font-semibold">
-                  Clear all
-                </Text>
-              </TouchableOpacity>
-            </View>
-          )}
-          {history.length === 0 ? (
-            <View className="items-center py-8 opacity-60">
-              <Ionicons
-                name="time-outline"
-                size={32}
-                color="#9ca3af"
-                style={{ marginBottom: 8 }}
-              />
-              <Text className="text-gray-400 italic text-base">
-                No search history yet
-              </Text>
-            </View>
-          ) : (
-            history.map((item, index) => (
-              <View
-                key={`${item}-${index}`}
-                className="flex-row items-center py-3 border-b border-gray-100 dark:border-gray-900"
-              >
-                <TouchableOpacity
-                  onPress={() => {
-                    setQuery(item);
-                    // Trigger immediate search
-                  }}
-                  style={{ flex: 1 }}
-                  activeOpacity={0.7}
-                  className="flex-row items-center"
-                >
-                  <Ionicons
-                    name="search-outline"
-                    size={18}
-                    color="#888"
-                    style={{ marginRight: 10 }}
-                  />
-                  <Text className="text-base text-black dark:text-white">
-                    {item}
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => removeFromHistory(item)}
-                  className="ml-2 p-2"
-                  activeOpacity={0.7}
-                >
-                  <Ionicons
-                    name="close-circle-outline"
-                    size={20}
-                    color="#888"
-                  />
-                </TouchableOpacity>
-              </View>
-            ))
-          )}
-        </View>
-      )}
-
-      {/* 🔄 Loading Skeleton */}
       {loading ? (
-        <View className="w-full" style={{ flex: 1 }}>
-          <View className="flex-row flex-wrap justify-between">
-            {[1, 2, 3, 4, 5, 6].map((i) => (
-              <View key={i} className="mb-4" style={{ width: "31%" }}>
-                <View className="w-full aspect-[2/3] bg-gray-200 dark:bg-gray-800 rounded-lg animate-pulse" />
-                <View className="h-4 w-3/4 bg-gray-200 dark:bg-gray-800 rounded mt-2 animate-pulse" />
-              </View>
-            ))}
-          </View>
+        <View className="flex-1 justify-center items-center">
+          <ActivityIndicator size="large" color={theme.primary} />
         </View>
+      ) : query.trim() !== "" ? (
+        <FlatList
+          data={results}
+          keyExtractor={(item, index) => `${item.id}-${index}`}
+          renderItem={renderItem}
+          numColumns={numColumns}
+          columnWrapperStyle={{
+            justifyContent: "space-between",
+            paddingHorizontal: padding,
+          }}
+          contentContainerStyle={{ paddingBottom: 100 }}
+          showsVerticalScrollIndicator={false}
+          ListEmptyComponent={
+            !loading && searched ? (
+              <View className="mt-20 items-center px-8">
+                <Ionicons
+                  name="film-outline"
+                  size={64}
+                  color={theme.textSecondary}
+                />
+                <Text
+                  className="mt-4 text-center text-lg font-semibold"
+                  style={{ color: theme.text }}
+                >
+                  No movies found for "{query}"
+                </Text>
+                <Text
+                  className="mt-2 text-center text-sm"
+                  style={{ color: theme.textSecondary }}
+                >
+                  Try searching for another movie title.
+                </Text>
+              </View>
+            ) : null
+          }
+          keyboardDismissMode="on-drag"
+          onEndReached={() => {
+            if (!loading && !loadingMore && hasMore) {
+              performSearch(query, page + 1);
+            }
+          }}
+          onEndReachedThreshold={2.0} // Trigger load much earlier (when 2 screen heights away)
+          ListFooterComponent={
+            loadingMore ? (
+              <View className="py-4">
+                <ActivityIndicator size="small" color={theme.primary} />
+              </View>
+            ) : null
+          }
+        />
       ) : (
-        <>
-          {/* ❌ No Results */}
-          {!loading && searched && results.length === 0 && (
-            <View className="mt-20 items-center">
-              <Ionicons name="search-outline" size={64} color="#333" />
-              <Text className="mt-5 text-gray-500 dark:text-gray-400 text-lg">
-                No results found for "{query}"
+        <ScrollView
+          className="flex-1 px-4"
+          keyboardDismissMode="on-drag"
+          showsVerticalScrollIndicator={false}
+        >
+          {history.length > 0 ? (
+            <Animated.View entering={FadeIn.duration(400)}>
+              <View className="flex-row justify-between items-center mb-4 mt-2">
+                <Text
+                  className="text-base font-bold"
+                  style={{ color: theme.text }}
+                >
+                  Recent Searches
+                </Text>
+                <TouchableOpacity onPress={clearHistory}>
+                  <Text
+                    style={{
+                      color: theme.primary,
+                      fontSize: 12,
+                      fontWeight: "600",
+                    }}
+                  >
+                    Clear All
+                  </Text>
+                </TouchableOpacity>
+              </View>
+              {history.map((term, index) => (
+                <TouchableOpacity
+                  key={`${term}-${index}`}
+                  onPress={() => setQuery(term)}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    paddingVertical: 14,
+                    borderBottomWidth: 1,
+                    borderBottomColor: theme.border,
+                  }}
+                >
+                  <View className="flex-row items-center">
+                    <Ionicons
+                      name="time-outline"
+                      size={20}
+                      color={theme.textSecondary}
+                      style={{ marginRight: 12 }}
+                    />
+                    <Text style={{ color: theme.textSecondary, fontSize: 16 }}>
+                      {term}
+                    </Text>
+                  </View>
+                  <TouchableOpacity
+                    onPress={() => removeFromHistory(term)}
+                    hitSlop={10}
+                  >
+                    <Ionicons
+                      name="close"
+                      size={18}
+                      color={theme.textSecondary}
+                    />
+                  </TouchableOpacity>
+                </TouchableOpacity>
+              ))}
+            </Animated.View>
+          ) : (
+            <View className="mt-32 items-center opacity-50">
+              <Ionicons name="search" size={64} color={theme.textSecondary} />
+              <Text
+                className="mt-4 text-base font-medium"
+                style={{ color: theme.textSecondary }}
+              >
+                Search for your favorite movies
               </Text>
             </View>
           )}
-
-          {/* 🎥 Movie Grid */}
-          <FlatList
-            data={results}
-            keyExtractor={(item) => item.id.toString()}
-            numColumns={3}
-            columnWrapperStyle={{ justifyContent: "space-between" }}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                className="mb-4 items-center"
-                onPress={() =>
-                  router.push({
-                    pathname: "/movie/[id]",
-                    params: { id: item.id.toString() },
-                  })
-                }
-                activeOpacity={0.8}
-                style={{ width: "31%" }}
-              >
-                <Image
-                  source={{
-                    uri: item.poster_path
-                      ? `https://image.tmdb.org/t/p/w185${item.poster_path}`
-                      : "https://via.placeholder.com/185x278?text=No+Poster",
-                  }}
-                  className="w-full aspect-[2/3] rounded-lg bg-gray-300 dark:bg-gray-700"
-                />
-                <View className="w-full mt-2 px-1">
-                  <Text
-                    className="text-xs font-bold text-black dark:text-white mb-1"
-                    numberOfLines={1}
-                  >
-                    {item.title}
-                  </Text>
-                  <Text className="text-[10px] text-gray-600 dark:text-gray-300">
-                    {item.release_date?.split("-")[0] || "N/A"}
-                  </Text>
-                </View>
-              </TouchableOpacity>
-            )}
-            style={{ width: "100%" }}
-            contentContainerStyle={{ paddingBottom: 100 }}
-            refreshing={refreshing}
-            onRefresh={refetch}
-          />
-        </>
+        </ScrollView>
       )}
     </View>
   );

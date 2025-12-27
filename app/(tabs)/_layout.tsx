@@ -38,6 +38,12 @@ const AnimatedIcon = ({
             stiffness: 120,
           }),
         },
+        {
+          translateY: withSpring(focused ? -2 : 0, {
+            damping: 12,
+            stiffness: 120,
+          }),
+        },
       ],
     };
   });
