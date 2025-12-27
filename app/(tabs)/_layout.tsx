@@ -1,10 +1,7 @@
-import OnBoarding from "@/components/OnBoarding";
-import { ONBOARDING_STORAGE_KEY, useOnBoardingState } from "@/context";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { BottomTabBarButtonProps } from "@react-navigation/bottom-tabs";
 import { Tabs } from "expo-router";
-import React, { useEffect } from "react";
+import React from "react";
 import {
   TextStyle,
   TouchableOpacity,
@@ -19,25 +16,6 @@ interface TabIconProps {
 
 export default function TabLayout(): React.JSX.Element {
   const colorScheme = useColorScheme();
-  const { isOnBoarding, setIsOnBoarding } = useOnBoardingState();
-
-  useEffect(() => {
-    const checkOnBoarding = async (): Promise<void> => {
-      const onBoarding: string | null = await AsyncStorage.getItem(
-        ONBOARDING_STORAGE_KEY
-      );
-      if (onBoarding === null) {
-        setIsOnBoarding(true);
-      } else {
-        setIsOnBoarding(false);
-      }
-    };
-    checkOnBoarding();
-  }, [setIsOnBoarding]);
-
-  if (isOnBoarding) {
-    return <OnBoarding />;
-  }
 
   const tabBarStyle: ViewStyle = {
     backgroundColor: colorScheme === "dark" ? "#1a1a1a" : "#ffffff",
@@ -89,13 +67,6 @@ export default function TabLayout(): React.JSX.Element {
     <FontAwesome size={focused ? 30 : 28} name="search" color={color} />
   );
 
-  const renderProfileIcon = ({
-    color,
-    focused,
-  }: TabIconProps): React.JSX.Element => (
-    <FontAwesome size={focused ? 30 : 28} name="user" color={color} />
-  );
-
   return (
     <Tabs
       screenOptions={{
@@ -119,13 +90,6 @@ export default function TabLayout(): React.JSX.Element {
         options={{
           title: "Search",
           tabBarIcon: renderSearchIcon,
-        }}
-      />
-      <Tabs.Screen
-        name="profile"
-        options={{
-          title: "Profile",
-          tabBarIcon: renderProfileIcon,
         }}
       />
     </Tabs>

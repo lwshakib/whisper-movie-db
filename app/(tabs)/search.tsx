@@ -1,8 +1,6 @@
-import { api } from "@/convex/_generated/api";
+import { useSearchHistory } from "@/context";
 import { searchMovies } from "@/TMDB/config";
-import { useUser } from "@clerk/clerk-expo";
 import { Ionicons } from "@expo/vector-icons";
-import { useMutation, useQuery } from "convex/react";
 import { useRouter } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import {
@@ -27,18 +25,14 @@ export default function Search() {
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const { user } = useUser();
+
+  const { history, addToHistory, removeFromHistory, clearHistory } =
+    useSearchHistory();
   const router = useRouter();
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const createSearchItem = useMutation(api.functions.createSearchItem);
-  const latestQueryId = useRef<number>(0); // ✅ Track latest query
-  const getSearchHistory = useQuery(api.functions.getSearchHistory, {
-    clerkId: user?.id as string,
-  });
-  const clearSearchHistory = useMutation(api.functions.clearSearchHistory);
-  const clearAllSearches = useMutation(api.functions.clearAllSearches);
+  const latestQueryId = useRef<number>(0);
 
-  // 🔄 Manual refetch (for search icon / pull-to-refresh)
+  // 🔄 Manual refetch
   const refetch = async () => {
     if (!query.trim()) {
       setResults([]);
@@ -56,6 +50,7 @@ export default function Search() {
       if (latestQueryId.current === queryId) {
         setResults(res.results || []);
         setSearched(true);
+        addToHistory(query);
       }
     } catch (e) {
       if (latestQueryId.current === queryId) {
@@ -69,18 +64,9 @@ export default function Search() {
     }
   };
 
-  // 🔄 Pull-to-refresh
-  const onRefresh = async () => {
-    if (!query.trim()) return;
-    setRefreshing(true);
-    await refetch();
-    setRefreshing(false);
-  };
-
   // ✅ Debounced Search Logic
   useEffect(() => {
     if (!query.trim()) {
-      // Reset when query is empty
       if (debounceRef.current) clearTimeout(debounceRef.current);
       setResults([]);
       setSearched(false);
@@ -96,12 +82,15 @@ export default function Search() {
 
       setLoading(true);
       setSearched(false);
-      createSearchItem({ clerkId: user?.id as string, content: query });
+
       searchMovies({ query })
         .then((res) => {
           if (latestQueryId.current === queryId) {
             setResults(res.results || []);
             setSearched(true);
+            if (res.results?.length > 0) {
+              addToHistory(query);
+            }
           }
         })
         .catch(() => {
@@ -115,7 +104,7 @@ export default function Search() {
             setLoading(false);
           }
         });
-    }, 500);
+    }, 800);
 
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -133,6 +122,7 @@ export default function Search() {
           value={query}
           onChangeText={setQuery}
           returnKeyType="search"
+          onSubmitEditing={refetch}
         />
         {query.trim().length > 0 && (
           <TouchableOpacity
@@ -149,25 +139,23 @@ export default function Search() {
       {/* Show search history when query is empty */}
       {query.trim() === "" && (
         <View className="w-full mb-4">
-          {(getSearchHistory?.length ?? 0) > 0 && (
+          {history.length > 0 && (
             <View className="flex-row items-center justify-between mb-2">
               <Text className="text-lg font-semibold text-black dark:text-white">
                 Recent Searches
               </Text>
               <TouchableOpacity
-                onPress={async () => {
-                  await clearAllSearches({ clerkId: user?.id as string });
-                }}
+                onPress={clearHistory}
                 className="px-2 py-1"
                 activeOpacity={0.7}
               >
-                <Text className="text-xs text-blue-600 dark:text-blue-400 font-semibold">
+                <Text className="text-xs text-red-600 font-semibold">
                   Clear all
                 </Text>
               </TouchableOpacity>
             </View>
           )}
-          {(getSearchHistory?.length ?? 0) === 0 ? (
+          {history.length === 0 ? (
             <View className="items-center py-8 opacity-60">
               <Ionicons
                 name="time-outline"
@@ -180,32 +168,40 @@ export default function Search() {
               </Text>
             </View>
           ) : (
-            getSearchHistory?.map((item) => (
+            history.map((item, index) => (
               <View
-                key={item._id}
-                className="flex-row items-center py-2"
-                style={{ opacity: 0.6 }}
+                key={`${item}-${index}`}
+                className="flex-row items-center py-3 border-b border-gray-100 dark:border-gray-900"
               >
                 <TouchableOpacity
-                  onPress={() => setQuery(item.content)}
+                  onPress={() => {
+                    setQuery(item);
+                    // Trigger immediate search
+                  }}
                   style={{ flex: 1 }}
                   activeOpacity={0.7}
+                  className="flex-row items-center"
                 >
+                  <Ionicons
+                    name="search-outline"
+                    size={18}
+                    color="#888"
+                    style={{ marginRight: 10 }}
+                  />
                   <Text className="text-base text-black dark:text-white">
-                    {item.content}
+                    {item}
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  onPress={async () => {
-                    await clearSearchHistory({
-                      clerkId: user?.id as string,
-                      historyId: item._id,
-                    });
-                  }}
-                  className="ml-2"
+                  onPress={() => removeFromHistory(item)}
+                  className="ml-2 p-2"
                   activeOpacity={0.7}
                 >
-                  <Ionicons name="close" size={18} color="#888" />
+                  <Ionicons
+                    name="close-circle-outline"
+                    size={20}
+                    color="#888"
+                  />
                 </TouchableOpacity>
               </View>
             ))
@@ -216,34 +212,25 @@ export default function Search() {
       {/* 🔄 Loading Skeleton */}
       {loading ? (
         <View className="w-full" style={{ flex: 1 }}>
-          {[0, 1].map((row) => (
-            <View key={row} className="flex-row justify-between mb-4">
-              {[0, 1, 2].map((col) => (
-                <View
-                  key={col}
-                  className="flex-1 m-1 my-4 items-center bg-transparent rounded-xl p-0"
-                  style={{ maxWidth: "32%" }}
-                >
-                  <View
-                    className="w-full h-44 rounded-lg bg-gray-200 dark:bg-gray-800 animate-pulse"
-                    style={{ aspectRatio: 2 / 3, width: "100%", maxWidth: 110 }}
-                  />
-                  <View className="w-full mt-2 px-1">
-                    <View className="h-4 w-3/4 bg-gray-200 dark:bg-gray-700 rounded mb-2 animate-pulse" />
-                    <View className="h-3 w-1/2 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-                  </View>
-                </View>
-              ))}
-            </View>
-          ))}
+          <View className="flex-row flex-wrap justify-between">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <View key={i} className="mb-4" style={{ width: "31%" }}>
+                <View className="w-full aspect-[2/3] bg-gray-200 dark:bg-gray-800 rounded-lg animate-pulse" />
+                <View className="h-4 w-3/4 bg-gray-200 dark:bg-gray-800 rounded mt-2 animate-pulse" />
+              </View>
+            ))}
+          </View>
         </View>
       ) : (
         <>
           {/* ❌ No Results */}
           {!loading && searched && results.length === 0 && (
-            <Text className="mt-5 text-gray-500 dark:text-gray-400">
-              No results found.
-            </Text>
+            <View className="mt-20 items-center">
+              <Ionicons name="search-outline" size={64} color="#333" />
+              <Text className="mt-5 text-gray-500 dark:text-gray-400 text-lg">
+                No results found for "{query}"
+              </Text>
+            </View>
           )}
 
           {/* 🎥 Movie Grid */}
@@ -254,7 +241,7 @@ export default function Search() {
             columnWrapperStyle={{ justifyContent: "space-between" }}
             renderItem={({ item }) => (
               <TouchableOpacity
-                className="flex-1 m-1 my-4 items-center bg-transparent rounded-xl p-0"
+                className="mb-4 items-center"
                 onPress={() =>
                   router.push({
                     pathname: "/movie/[id]",
@@ -262,16 +249,15 @@ export default function Search() {
                   })
                 }
                 activeOpacity={0.8}
-                style={{ maxWidth: "32%" }}
+                style={{ width: "31%" }}
               >
                 <Image
                   source={{
                     uri: item.poster_path
                       ? `https://image.tmdb.org/t/p/w185${item.poster_path}`
-                      : "https://img.myloview.com/stickers/whitelaptop-screen-with-hd-video-technology-icon-isolated-on-grey-background-abstractcircle-random-dots-vector-illustration-400-176057922.jpg",
+                      : "https://via.placeholder.com/185x278?text=No+Poster",
                   }}
-                  className="w-full h-44 rounded-lg bg-gray-300 dark:bg-gray-700"
-                  style={{ aspectRatio: 2 / 3, width: "100%", maxWidth: 110 }}
+                  className="w-full aspect-[2/3] rounded-lg bg-gray-300 dark:bg-gray-700"
                 />
                 <View className="w-full mt-2 px-1">
                   <Text
@@ -280,14 +266,14 @@ export default function Search() {
                   >
                     {item.title}
                   </Text>
-                  <Text className="text-xs text-gray-600 dark:text-gray-300">
-                    {item.release_date}
+                  <Text className="text-[10px] text-gray-600 dark:text-gray-300">
+                    {item.release_date?.split("-")[0] || "N/A"}
                   </Text>
                 </View>
               </TouchableOpacity>
             )}
             style={{ width: "100%" }}
-            contentContainerStyle={{ paddingBottom: 32 }}
+            contentContainerStyle={{ paddingBottom: 100 }}
             refreshing={refreshing}
             onRefresh={refetch}
           />
