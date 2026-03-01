@@ -1,8 +1,8 @@
-import * as SecureStore from "expo-secure-store";
-import { create } from "zustand";
-import { createJSONStorage, persist } from "zustand/middleware";
+import * as SecureStore from 'expo-secure-store';
+import { create } from 'zustand';
+import { createJSONStorage, persist } from 'zustand/middleware';
 
-export const ONBOARDING_STORAGE_KEY = "onBoarding";
+export const ONBOARDING_STORAGE_KEY = 'onBoarding';
 
 interface OnBoardingState {
   isOnBoarding: boolean | null;
@@ -22,11 +22,11 @@ export const useOnBoardingState = create<OnBoardingState>()(
         setItem: (name, value) => SecureStore.setItemAsync(name, value),
         removeItem: (name) => SecureStore.deleteItemAsync(name),
       })),
-    }
-  )
+    },
+  ),
 );
 
-export const SEARCH_HISTORY_STORAGE_KEY = "searchHistory";
+export const SEARCH_HISTORY_STORAGE_KEY = 'searchHistory';
 
 interface SearchHistoryState {
   history: string[];
@@ -58,11 +58,11 @@ export const useSearchHistory = create<SearchHistoryState>()(
         setItem: (name, value) => SecureStore.setItemAsync(name, value),
         removeItem: (name) => SecureStore.deleteItemAsync(name),
       })),
-    }
-  )
+    },
+  ),
 );
 
-export const FAVORITES_STORAGE_KEY = "favorites";
+export const FAVORITES_STORAGE_KEY = 'favorites';
 
 interface FavoritesState {
   favorites: string[];
@@ -92,6 +92,6 @@ export const useFavorites = create<FavoritesState>()(
         setItem: (name, value) => SecureStore.setItemAsync(name, value),
         removeItem: (name) => SecureStore.deleteItemAsync(name),
       })),
-    }
-  )
+    },
+  ),
 );

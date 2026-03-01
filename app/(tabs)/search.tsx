@@ -1,8 +1,8 @@
-import { useSearchHistory } from "@/context";
-import { searchMovies } from "@/TMDB/config";
-import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
-import React, { useEffect, useRef, useState } from "react";
+import { useSearchHistory } from '@/context';
+import { searchMovies } from '@/TMDB/config';
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Dimensions,
@@ -14,11 +14,11 @@ import {
   TouchableOpacity,
   useColorScheme,
   View,
-} from "react-native";
-import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+} from 'react-native';
+import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-const { width } = Dimensions.get("window");
+const { width } = Dimensions.get('window');
 const numColumns = 3;
 const gap = 12;
 const padding = 16;
@@ -33,7 +33,7 @@ interface Movie {
 }
 
 export default function Search() {
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState('');
   const [results, setResults] = useState<Movie[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -41,8 +41,7 @@ export default function Search() {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
 
-  const { history, addToHistory, removeFromHistory, clearHistory } =
-    useSearchHistory();
+  const { history, addToHistory, removeFromHistory, clearHistory } = useSearchHistory();
   const router = useRouter();
   const colorScheme = useColorScheme();
   const insets = useSafeAreaInsets();
@@ -50,14 +49,14 @@ export default function Search() {
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const latestQueryId = useRef<number>(0);
 
-  const isDark = colorScheme === "dark";
+  const isDark = colorScheme === 'dark';
   const theme = {
-    bg: isDark ? "#000000" : "#ffffff",
-    text: isDark ? "#ffffff" : "#000000",
-    textSecondary: isDark ? "#9ca3af" : "#6b7280",
-    inputBg: isDark ? "#1C1C1E" : "#F2F2F7",
-    primary: "#ef4444",
-    border: isDark ? "#2C2C2E" : "#E5E5EA",
+    bg: isDark ? '#000000' : '#ffffff',
+    text: isDark ? '#ffffff' : '#000000',
+    textSecondary: isDark ? '#9ca3af' : '#6b7280',
+    inputBg: isDark ? '#1C1C1E' : '#F2F2F7',
+    primary: '#ef4444',
+    border: isDark ? '#2C2C2E' : '#E5E5EA',
   };
 
   const performSearch = async (text: string, pageNum = 1) => {
@@ -123,7 +122,7 @@ export default function Search() {
   }, [query]);
 
   const clearSearch = () => {
-    setQuery("");
+    setQuery('');
     setResults([]);
     setSearched(false);
     inputRef.current?.focus();
@@ -138,7 +137,7 @@ export default function Search() {
         activeOpacity={0.7}
         onPress={() =>
           router.push({
-            pathname: "/movie/[id]",
+            pathname: '/movie/[id]',
             params: { id: item.id.toString() },
           })
         }
@@ -147,7 +146,7 @@ export default function Search() {
           source={{
             uri: item.poster_path
               ? `https://image.tmdb.org/t/p/w342${item.poster_path}`
-              : "https://via.placeholder.com/300x450",
+              : 'https://via.placeholder.com/300x450',
           }}
           style={{
             width: itemWidth,
@@ -157,39 +156,30 @@ export default function Search() {
           }}
           resizeMode="cover"
         />
-        <Text
-          numberOfLines={1}
-          className="mt-2 text-xs font-bold"
-          style={{ color: theme.text }}
-        >
+        <Text numberOfLines={1} className="mt-2 text-xs font-bold" style={{ color: theme.text }}>
           {item.title}
         </Text>
         <Text className="text-[10px]" style={{ color: theme.textSecondary }}>
-          {item.release_date?.split("-")[0] || "N/A"}
+          {item.release_date?.split('-')[0] || 'N/A'}
         </Text>
       </TouchableOpacity>
     </Animated.View>
   );
 
   return (
-    <View
-      style={{ flex: 1, backgroundColor: theme.bg, paddingTop: insets.top }}
-    >
+    <View style={{ flex: 1, backgroundColor: theme.bg, paddingTop: insets.top }}>
       <View className="px-4 pb-4">
-        <Text
-          className="text-3xl font-bold mb-4 mt-2"
-          style={{ color: theme.text }}
-        >
+        <Text className="mb-4 mt-2 text-3xl font-bold" style={{ color: theme.text }}>
           Search
         </Text>
         <View
-          className="flex-row items-center h-12 rounded-xl px-3"
+          className="h-12 flex-row items-center rounded-xl px-3"
           style={{ backgroundColor: theme.inputBg }}
         >
           <Ionicons name="search" size={20} color={theme.textSecondary} />
           <TextInput
             ref={inputRef}
-            className="flex-1 ml-2 font-medium"
+            className="ml-2 flex-1 font-medium"
             style={{ color: theme.text, fontSize: 16 }}
             placeholder="Search for movies, TV shows..."
             placeholderTextColor={theme.textSecondary}
@@ -201,28 +191,24 @@ export default function Search() {
           />
           {query.length > 0 && (
             <TouchableOpacity onPress={clearSearch}>
-              <Ionicons
-                name="close-circle"
-                size={20}
-                color={theme.textSecondary}
-              />
+              <Ionicons name="close-circle" size={20} color={theme.textSecondary} />
             </TouchableOpacity>
           )}
         </View>
       </View>
 
       {loading ? (
-        <View className="flex-1 justify-center items-center">
+        <View className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color={theme.primary} />
         </View>
-      ) : query.trim() !== "" ? (
+      ) : query.trim() !== '' ? (
         <FlatList
           data={results}
           keyExtractor={(item, index) => `${item.id}-${index}`}
           renderItem={renderItem}
           numColumns={numColumns}
           columnWrapperStyle={{
-            justifyContent: "space-between",
+            justifyContent: 'space-between',
             paddingHorizontal: padding,
           }}
           contentContainerStyle={{ paddingBottom: 100 }}
@@ -230,21 +216,14 @@ export default function Search() {
           ListEmptyComponent={
             !loading && searched ? (
               <View className="mt-20 items-center px-8">
-                <Ionicons
-                  name="film-outline"
-                  size={64}
-                  color={theme.textSecondary}
-                />
+                <Ionicons name="film-outline" size={64} color={theme.textSecondary} />
                 <Text
                   className="mt-4 text-center text-lg font-semibold"
                   style={{ color: theme.text }}
                 >
                   No movies found for "{query}"
                 </Text>
-                <Text
-                  className="mt-2 text-center text-sm"
-                  style={{ color: theme.textSecondary }}
-                >
+                <Text className="mt-2 text-center text-sm" style={{ color: theme.textSecondary }}>
                   Try searching for another movie title.
                 </Text>
               </View>
@@ -273,11 +252,8 @@ export default function Search() {
         >
           {history.length > 0 ? (
             <Animated.View entering={FadeIn.duration(400)}>
-              <View className="flex-row justify-between items-center mb-4 mt-2">
-                <Text
-                  className="text-base font-bold"
-                  style={{ color: theme.text }}
-                >
+              <View className="mb-4 mt-2 flex-row items-center justify-between">
+                <Text className="text-base font-bold" style={{ color: theme.text }}>
                   Recent Searches
                 </Text>
                 <TouchableOpacity onPress={clearHistory}>
@@ -285,7 +261,7 @@ export default function Search() {
                     style={{
                       color: theme.primary,
                       fontSize: 12,
-                      fontWeight: "600",
+                      fontWeight: '600',
                     }}
                   >
                     Clear All
@@ -297,9 +273,9 @@ export default function Search() {
                   key={`${term}-${index}`}
                   onPress={() => setQuery(term)}
                   style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    justifyContent: "space-between",
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
                     paddingVertical: 14,
                     borderBottomWidth: 1,
                     borderBottomColor: theme.border,
@@ -312,19 +288,10 @@ export default function Search() {
                       color={theme.textSecondary}
                       style={{ marginRight: 12 }}
                     />
-                    <Text style={{ color: theme.textSecondary, fontSize: 16 }}>
-                      {term}
-                    </Text>
+                    <Text style={{ color: theme.textSecondary, fontSize: 16 }}>{term}</Text>
                   </View>
-                  <TouchableOpacity
-                    onPress={() => removeFromHistory(term)}
-                    hitSlop={10}
-                  >
-                    <Ionicons
-                      name="close"
-                      size={18}
-                      color={theme.textSecondary}
-                    />
+                  <TouchableOpacity onPress={() => removeFromHistory(term)} hitSlop={10}>
+                    <Ionicons name="close" size={18} color={theme.textSecondary} />
                   </TouchableOpacity>
                 </TouchableOpacity>
               ))}
@@ -332,10 +299,7 @@ export default function Search() {
           ) : (
             <View className="mt-32 items-center opacity-50">
               <Ionicons name="search" size={64} color={theme.textSecondary} />
-              <Text
-                className="mt-4 text-base font-medium"
-                style={{ color: theme.textSecondary }}
-              >
+              <Text className="mt-4 text-base font-medium" style={{ color: theme.textSecondary }}>
                 Search for your favorite movies
               </Text>
             </View>

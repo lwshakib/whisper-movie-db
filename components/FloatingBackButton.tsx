@@ -1,17 +1,14 @@
-import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
-import React from "react";
-import { TouchableOpacity, View } from "react-native";
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import React from 'react';
+import { TouchableOpacity, View } from 'react-native';
 
 interface FloatingBackButtonProps {
   onPress?: () => void;
   visible?: boolean;
 }
 
-export default function FloatingBackButton({
-  onPress,
-  visible = true,
-}: FloatingBackButtonProps) {
+export default function FloatingBackButton({ onPress, visible = true }: FloatingBackButtonProps) {
   const router = useRouter();
 
   const handlePress = () => {
@@ -25,12 +22,12 @@ export default function FloatingBackButton({
   if (!visible) return null;
 
   return (
-    <View className="absolute top-12 left-4 z-50">
+    <View className="absolute left-4 top-12 z-50">
       <TouchableOpacity
         onPress={handlePress}
-        className="w-12 h-12 bg-black/50 dark:bg-white/20 rounded-full items-center justify-center backdrop-blur-sm"
+        className="h-12 w-12 items-center justify-center rounded-full bg-black/50 backdrop-blur-sm dark:bg-white/20"
         style={{
-          shadowColor: "#000",
+          shadowColor: '#000',
           shadowOffset: { width: 0, height: 2 },
           shadowOpacity: 0.25,
           shadowRadius: 4,

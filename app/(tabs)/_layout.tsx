@@ -1,34 +1,17 @@
-import { Ionicons } from "@expo/vector-icons";
-import { BottomTabBarButtonProps } from "@react-navigation/bottom-tabs";
-import * as Haptics from "expo-haptics";
-import { Tabs } from "expo-router";
-import React from "react";
-import {
-  TouchableOpacity,
-  useColorScheme,
-  View,
-  ViewStyle,
-} from "react-native";
-import Animated, {
-  useAnimatedStyle,
-  withSpring,
-  withTiming,
-} from "react-native-reanimated";
+import { Ionicons } from '@expo/vector-icons';
+import { BottomTabBarButtonProps } from '@react-navigation/bottom-tabs';
+import * as Haptics from 'expo-haptics';
+import { Tabs } from 'expo-router';
+import React from 'react';
+import { TouchableOpacity, useColorScheme, View, ViewStyle } from 'react-native';
+import Animated, { useAnimatedStyle, withSpring, withTiming } from 'react-native-reanimated';
 
 interface TabIconProps {
   color: string;
   focused: boolean;
 }
 
-const AnimatedIcon = ({
-  name,
-  focused,
-  color,
-}: {
-  name: any;
-  focused: boolean;
-  color: string;
-}) => {
+const AnimatedIcon = ({ name, focused, color }: { name: any; focused: boolean; color: string }) => {
   const animatedIconStyle = useAnimatedStyle(() => {
     return {
       transform: [
@@ -63,13 +46,9 @@ const AnimatedIcon = ({
   });
 
   return (
-    <View style={{ alignItems: "center", justifyContent: "center" }}>
+    <View style={{ alignItems: 'center', justifyContent: 'center' }}>
       <Animated.View style={animatedIconStyle}>
-        <Ionicons
-          size={26}
-          name={focused ? name : `${name}-outline`}
-          color={color}
-        />
+        <Ionicons size={26} name={focused ? name : `${name}-outline`} color={color} />
       </Animated.View>
       <Animated.View
         style={[
@@ -77,8 +56,8 @@ const AnimatedIcon = ({
             width: 4,
             height: 4,
             borderRadius: 2,
-            backgroundColor: "#ef4444",
-            position: "absolute",
+            backgroundColor: '#ef4444',
+            position: 'absolute',
             bottom: -10,
           },
           animatedDotStyle,
@@ -92,24 +71,22 @@ export default function TabLayout(): React.JSX.Element {
   const colorScheme = useColorScheme();
 
   const tabBarStyle: ViewStyle = {
-    backgroundColor: colorScheme === "dark" ? "#1A1A1A" : "#FFFFFF",
+    backgroundColor: colorScheme === 'dark' ? '#1A1A1A' : '#FFFFFF',
     borderTopWidth: 0,
     height: 70,
     borderRadius: 35,
     marginHorizontal: 30,
     marginBottom: 25,
-    position: "absolute",
-    shadowColor: "#000",
+    position: 'absolute',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: colorScheme === "dark" ? 0.4 : 0.1,
+    shadowOpacity: colorScheme === 'dark' ? 0.4 : 0.1,
     shadowRadius: 20,
     elevation: 20,
     zIndex: 50,
   };
 
-  const renderTabBarButton = (
-    props: BottomTabBarButtonProps
-  ): React.JSX.Element => {
+  const renderTabBarButton = (props: BottomTabBarButtonProps): React.JSX.Element => {
     const { style, onPress, children, ...rest } = props;
 
     return (
@@ -123,14 +100,12 @@ export default function TabLayout(): React.JSX.Element {
         style={[
           style as ViewStyle,
           {
-            justifyContent: "center",
-            alignItems: "center",
+            justifyContent: 'center',
+            alignItems: 'center',
           },
         ]}
       >
-        {typeof children === "function"
-          ? (children as any)({ pressed: false })
-          : children}
+        {typeof children === 'function' ? (children as any)({ pressed: false }) : children}
       </TouchableOpacity>
     );
   };
@@ -140,8 +115,8 @@ export default function TabLayout(): React.JSX.Element {
       screenOptions={{
         headerShown: false,
         tabBarStyle,
-        tabBarActiveTintColor: "#ef4444",
-        tabBarInactiveTintColor: colorScheme === "dark" ? "#666666" : "#999999",
+        tabBarActiveTintColor: '#ef4444',
+        tabBarInactiveTintColor: colorScheme === 'dark' ? '#666666' : '#999999',
         tabBarShowLabel: false,
         tabBarButton: renderTabBarButton,
       }}
@@ -149,7 +124,7 @@ export default function TabLayout(): React.JSX.Element {
       <Tabs.Screen
         name="index"
         options={{
-          title: "Home",
+          title: 'Home',
           tabBarIcon: ({ color, focused }) => (
             <AnimatedIcon name="home" color={color} focused={focused} />
           ),
@@ -158,7 +133,7 @@ export default function TabLayout(): React.JSX.Element {
       <Tabs.Screen
         name="search"
         options={{
-          title: "Search",
+          title: 'Search',
           tabBarIcon: ({ color, focused }) => (
             <AnimatedIcon name="search" color={color} focused={focused} />
           ),

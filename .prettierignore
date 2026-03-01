@@ -1,0 +1,11 @@
+node_modules
+.expo
+.next
+dist
+build
+web-build
+*.lock
+package-lock.json
+bun.lockb
+.env
+.env.*

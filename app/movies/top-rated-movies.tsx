@@ -1,11 +1,7 @@
-import FloatingBackButton from "@/components/FloatingBackButton";
-import {
-  fallbackMoviePoster,
-  fetchTopRatedMovies,
-  image500,
-} from "@/TMDB/config";
-import { useRouter } from "expo-router";
-import React, { useCallback, useEffect, useState } from "react";
+import FloatingBackButton from '@/components/FloatingBackButton';
+import { fallbackMoviePoster, fetchTopRatedMovies, image500 } from '@/TMDB/config';
+import { useRouter } from 'expo-router';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Dimensions,
@@ -16,10 +12,10 @@ import {
   TouchableOpacity,
   useColorScheme,
   View,
-} from "react-native";
-import Animated, { FadeInDown } from "react-native-reanimated";
+} from 'react-native';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 
-const { width } = Dimensions.get("window");
+const { width } = Dimensions.get('window');
 const numColumns = 3;
 const gap = 12;
 const padding = 16;
@@ -30,9 +26,9 @@ const SKELETON_ITEMS = Array.from({ length: 12 });
 
 const SkeletonItem = () => (
   <View style={{ width: itemWidth, marginBottom: 16 }}>
-    <View className="h-[180px] bg-gray-800 animate-pulse rounded-xl mb-2" />
-    <View className="h-4 w-3/4 bg-gray-800 rounded mb-1 animate-pulse" />
-    <View className="h-3 w-1/2 bg-gray-800 rounded animate-pulse" />
+    <View className="mb-2 h-[180px] animate-pulse rounded-xl bg-gray-800" />
+    <View className="mb-1 h-4 w-3/4 animate-pulse rounded bg-gray-800" />
+    <View className="h-3 w-1/2 animate-pulse rounded bg-gray-800" />
   </View>
 );
 
@@ -45,44 +41,41 @@ export default function TopRatedMovies() {
   const [hasMore, setHasMore] = useState(true);
   const router = useRouter();
   const colorScheme = useColorScheme();
-  const isDark = colorScheme === "dark";
+  const isDark = colorScheme === 'dark';
 
-  const loadMovies = useCallback(
-    async (pageNumber: number, isRefresh = false) => {
-      try {
-        if (isRefresh) {
-          setRefreshing(true);
-        } else if (pageNumber === 1) {
-          setLoading(true);
-        } else {
-          setIsFetchingMore(true);
-        }
-
-        const res = await fetchTopRatedMovies(pageNumber);
-
-        if (res.results.length === 0) {
-          setHasMore(false);
-        } else {
-          setHasMore(true);
-        }
-
-        if (pageNumber === 1) {
-          setMovies(res.results || []);
-        } else {
-          setMovies((prev) => [...prev, ...(res.results || [])]);
-        }
-
-        setPage(pageNumber);
-      } catch {
-        // Handle error silently
-      } finally {
-        setLoading(false);
-        setRefreshing(false);
-        setIsFetchingMore(false);
+  const loadMovies = useCallback(async (pageNumber: number, isRefresh = false) => {
+    try {
+      if (isRefresh) {
+        setRefreshing(true);
+      } else if (pageNumber === 1) {
+        setLoading(true);
+      } else {
+        setIsFetchingMore(true);
       }
-    },
-    []
-  );
+
+      const res = await fetchTopRatedMovies(pageNumber);
+
+      if (res.results.length === 0) {
+        setHasMore(false);
+      } else {
+        setHasMore(true);
+      }
+
+      if (pageNumber === 1) {
+        setMovies(res.results || []);
+      } else {
+        setMovies((prev) => [...prev, ...(res.results || [])]);
+      }
+
+      setPage(pageNumber);
+    } catch {
+      // Handle error silently
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+      setIsFetchingMore(false);
+    }
+  }, []);
 
   useEffect(() => {
     loadMovies(1);
@@ -108,7 +101,7 @@ export default function TopRatedMovies() {
         activeOpacity={0.7}
         onPress={() =>
           router.push({
-            pathname: "/movie/[id]",
+            pathname: '/movie/[id]',
             params: { id: item.id.toString() },
           })
         }
@@ -121,20 +114,20 @@ export default function TopRatedMovies() {
             width: itemWidth,
             height: itemWidth * 1.5,
             borderRadius: 12,
-            backgroundColor: isDark ? "#1f1f1f" : "#e5e5e5",
+            backgroundColor: isDark ? '#1f1f1f' : '#e5e5e5',
           }}
           resizeMode="cover"
         />
         <View className="mt-2">
           <Text
-            className="text-white text-xs font-bold"
-            style={{ color: isDark ? "#fff" : "#000" }}
+            className="text-xs font-bold text-white"
+            style={{ color: isDark ? '#fff' : '#000' }}
             numberOfLines={1}
           >
             {item.title}
           </Text>
-          <Text className="text-gray-400 text-[10px]">
-            {item.release_date?.split("-")[0] || "N/A"}
+          <Text className="text-[10px] text-gray-400">
+            {item.release_date?.split('-')[0] || 'N/A'}
           </Text>
         </View>
       </TouchableOpacity>
@@ -142,18 +135,12 @@ export default function TopRatedMovies() {
   );
 
   return (
-    <View
-      className="flex-1 pt-4"
-      style={{ backgroundColor: isDark ? "#000000" : "#ffffff" }}
-    >
+    <View className="flex-1 pt-4" style={{ backgroundColor: isDark ? '#000000' : '#ffffff' }}>
       <FloatingBackButton />
 
       {loading && !refreshing ? (
-        <View className="px-4 mt-20">
-          <Text
-            className="text-2xl font-bold mb-6"
-            style={{ color: isDark ? "#fff" : "#000" }}
-          >
+        <View className="mt-20 px-4">
+          <Text className="mb-6 text-2xl font-bold" style={{ color: isDark ? '#fff' : '#000' }}>
             Top Rated Movies
           </Text>
           <View className="flex-row flex-wrap justify-between">
@@ -169,14 +156,14 @@ export default function TopRatedMovies() {
           numColumns={numColumns}
           renderItem={renderItem}
           columnWrapperStyle={{
-            justifyContent: "space-between",
+            justifyContent: 'space-between',
             paddingHorizontal: padding,
           }}
           contentContainerStyle={{ paddingBottom: 50, paddingTop: 80 }}
           ListHeaderComponent={
             <Text
-              className="text-2xl font-bold mb-6 px-4"
-              style={{ color: isDark ? "#fff" : "#000" }}
+              className="mb-6 px-4 text-2xl font-bold"
+              style={{ color: isDark ? '#fff' : '#000' }}
             >
               Top Rated Movies
             </Text>
@@ -185,8 +172,8 @@ export default function TopRatedMovies() {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={onRefresh}
-              tintColor={isDark ? "#fff" : "#000"}
-              colors={["#ef4444"]}
+              tintColor={isDark ? '#fff' : '#000'}
+              colors={['#ef4444']}
             />
           }
           onEndReached={onEndReached}

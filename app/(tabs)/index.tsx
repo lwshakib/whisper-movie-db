@@ -4,10 +4,10 @@ import {
   fetchTrendingMovies,
   fetchUpcomingMovies,
   image500,
-} from "@/TMDB/config";
-import { LinearGradient } from "expo-linear-gradient";
-import { useRouter } from "expo-router";
-import { useEffect, useRef, useState } from "react";
+} from '@/TMDB/config';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useRouter } from 'expo-router';
+import { useEffect, useRef, useState } from 'react';
 import {
   Dimensions,
   FlatList,
@@ -20,9 +20,9 @@ import {
   TouchableOpacity,
   useColorScheme,
   View,
-} from "react-native";
+} from 'react-native';
 
-const { width } = Dimensions.get("window");
+const { width } = Dimensions.get('window');
 
 // Define the Movie type
 interface Movie {
@@ -39,19 +39,17 @@ const SectionHeader: React.FC<{ title: string; onExploreAll: () => void }> = ({
   title,
   onExploreAll,
 }) => (
-  <View className="flex-row justify-between items-center px-4 mt-8 mb-4">
+  <View className="mb-4 mt-8 flex-row items-center justify-between px-4">
     <View className="flex-row items-center">
-      <View className="w-1.5 h-6 bg-red-600 rounded-full mr-3" />
-      <Text className="text-black dark:text-white text-2xl font-black tracking-tight">
-        {title}
-      </Text>
+      <View className="mr-3 h-6 w-1.5 rounded-full bg-red-600" />
+      <Text className="text-2xl font-black tracking-tight text-black dark:text-white">{title}</Text>
     </View>
     <TouchableOpacity
       onPress={onExploreAll}
-      className="bg-gray-100 dark:bg-gray-900 px-4 py-2 rounded-full"
+      className="rounded-full bg-gray-100 px-4 py-2 dark:bg-gray-900"
       activeOpacity={0.7}
     >
-      <Text className="text-gray-600 dark:text-gray-400 font-bold text-xs uppercase tracking-widest">
+      <Text className="text-xs font-bold uppercase tracking-widest text-gray-600 dark:text-gray-400">
         See All
       </Text>
     </TouchableOpacity>
@@ -100,7 +98,7 @@ export default function Tab() {
       const upcomingRes = await fetchUpcomingMovies();
       setUpcomingMovies(upcomingRes.results);
     } catch (error) {
-      console.error("Error fetching movies:", error);
+      console.error('Error fetching movies:', error);
     } finally {
       if (!isRefreshing) setLoading(false);
       setRefreshing(false);
@@ -153,7 +151,7 @@ export default function Tab() {
       activeOpacity={1}
       onPress={() =>
         router.push({
-          pathname: "/movie/[id]",
+          pathname: '/movie/[id]',
           params: { id: item.id.toString() },
         })
       }
@@ -163,52 +161,44 @@ export default function Tab() {
         source={{
           uri: `https://image.tmdb.org/t/p/w1280${item.backdrop_path}`,
         }}
-        className="w-full h-[550px] justify-end"
+        className="h-[550px] w-full justify-end"
         resizeMode="cover"
       >
         <LinearGradient
-          colors={["transparent", "rgba(0,0,0,0.5)", "#000000"]}
+          colors={['transparent', 'rgba(0,0,0,0.5)', '#000000']}
           className="absolute inset-x-0 bottom-0 h-[80%]"
         />
-        <View className="p-6 mb-8">
-          <View className="bg-red-600 self-start px-3 py-1 rounded-full mb-3">
-            <Text className="text-white text-[10px] font-black uppercase tracking-widest">
+        <View className="mb-8 p-6">
+          <View className="mb-3 self-start rounded-full bg-red-600 px-3 py-1">
+            <Text className="text-[10px] font-black uppercase tracking-widest text-white">
               Trending
             </Text>
           </View>
-          <Text
-            className="text-white text-4xl font-black mb-2"
-            numberOfLines={2}
-          >
+          <Text className="mb-2 text-4xl font-black text-white" numberOfLines={2}>
             {item.title}
           </Text>
-          <Text
-            className="text-gray-300 text-sm mb-6 leading-5"
-            numberOfLines={3}
-          >
+          <Text className="mb-6 text-sm leading-5 text-gray-300" numberOfLines={3}>
             {item.overview}
           </Text>
           <View className="flex-row items-center">
             <TouchableOpacity
               onPress={() =>
                 router.push({
-                  pathname: "/movie/[id]",
+                  pathname: '/movie/[id]',
                   params: { id: item.id.toString() },
                 })
               }
-              className="bg-red-600 px-8 py-4 rounded-2xl flex-row items-center"
+              className="flex-row items-center rounded-2xl bg-red-600 px-8 py-4"
               style={{
-                shadowColor: "#ef4444",
+                shadowColor: '#ef4444',
                 shadowOffset: { width: 0, height: 8 },
                 shadowOpacity: 0.4,
                 shadowRadius: 12,
                 elevation: 10,
               }}
             >
-              <Text className="text-white font-black text-base mr-2">
-                Watch Now
-              </Text>
-              <Text className="text-white text-xl">▶</Text>
+              <Text className="mr-2 text-base font-black text-white">Watch Now</Text>
+              <Text className="text-xl text-white">▶</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -221,23 +211,16 @@ export default function Tab() {
       <View
         className="flex-1"
         style={{
-          backgroundColor: colorScheme === "dark" ? "#000000" : "#ffffff",
+          backgroundColor: colorScheme === 'dark' ? '#000000' : '#ffffff',
         }}
       >
-        <StatusBar
-          barStyle="light-content"
-          translucent
-          backgroundColor="transparent"
-        />
-        <View className="w-full h-[550px] bg-gray-200 dark:bg-zinc-900 animate-pulse" />
+        <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+        <View className="h-[550px] w-full animate-pulse bg-gray-200 dark:bg-zinc-900" />
         <View className="p-4">
-          <View className="h-8 w-48 bg-gray-200 dark:bg-zinc-900 rounded-lg mb-6" />
+          <View className="mb-6 h-8 w-48 rounded-lg bg-gray-200 dark:bg-zinc-900" />
           <View className="flex-row">
             {[1, 2, 3].map((i) => (
-              <View
-                key={i}
-                className="w-40 h-60 bg-gray-200 dark:bg-zinc-900 rounded-2xl mr-4"
-              />
+              <View key={i} className="mr-4 h-60 w-40 rounded-2xl bg-gray-200 dark:bg-zinc-900" />
             ))}
           </View>
         </View>
@@ -248,7 +231,7 @@ export default function Tab() {
   return (
     <ScrollView
       style={{
-        backgroundColor: colorScheme === "dark" ? "#000000" : "#ffffff",
+        backgroundColor: colorScheme === 'dark' ? '#000000' : '#ffffff',
       }}
       contentContainerStyle={{ paddingBottom: 100 }}
       showsVerticalScrollIndicator={false}
@@ -257,15 +240,11 @@ export default function Tab() {
           refreshing={refreshing}
           onRefresh={onRefresh}
           tintColor="#ef4444"
-          colors={["#ef4444"]}
+          colors={['#ef4444']}
         />
       }
     >
-      <StatusBar
-        barStyle="light-content"
-        translucent
-        backgroundColor="transparent"
-      />
+      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
 
       {/* Hero Slider */}
       <View>
@@ -293,10 +272,7 @@ export default function Tab() {
       </View>
 
       {/* Lists */}
-      <SectionHeader
-        title="Trending"
-        onExploreAll={() => router.push("/movies/trending-movies")}
-      />
+      <SectionHeader title="Trending" onExploreAll={() => router.push('/movies/trending-movies')} />
       <FlatList
         data={trendingMovies.slice(5)}
         keyExtractor={(item) => item.id.toString()}
@@ -308,15 +284,15 @@ export default function Tab() {
             className="mr-5"
             onPress={() =>
               router.push({
-                pathname: "/movie/[id]",
+                pathname: '/movie/[id]',
                 params: { id: item.id.toString() },
               })
             }
           >
             <View
-              className="w-44 h-64 rounded-3xl overflow-hidden mb-3"
+              className="mb-3 h-64 w-44 overflow-hidden rounded-3xl"
               style={{
-                shadowColor: "#000",
+                shadowColor: '#000',
                 shadowOffset: { width: 0, height: 10 },
                 shadowOpacity: 0.3,
                 shadowRadius: 15,
@@ -327,18 +303,15 @@ export default function Tab() {
                 source={{
                   uri: image500(item.poster_path) || fallbackMoviePoster,
                 }}
-                className="w-full h-full"
+                className="h-full w-full"
                 resizeMode="cover"
               />
             </View>
-            <Text
-              className="text-black dark:text-white font-bold text-base w-44"
-              numberOfLines={1}
-            >
+            <Text className="w-44 text-base font-bold text-black dark:text-white" numberOfLines={1}>
               {item.title}
             </Text>
-            <Text className="text-gray-500 dark:text-gray-400 text-xs font-medium">
-              {item.release_date?.split("-")[0]}
+            <Text className="text-xs font-medium text-gray-500 dark:text-gray-400">
+              {item.release_date?.split('-')[0]}
             </Text>
           </TouchableOpacity>
         )}
@@ -346,7 +319,7 @@ export default function Tab() {
 
       <SectionHeader
         title="Top Rated"
-        onExploreAll={() => router.push("/movies/top-rated-movies")}
+        onExploreAll={() => router.push('/movies/top-rated-movies')}
       />
       <FlatList
         data={topRatedMovies}
@@ -359,28 +332,25 @@ export default function Tab() {
             className="mr-5"
             onPress={() =>
               router.push({
-                pathname: "/movie/[id]",
+                pathname: '/movie/[id]',
                 params: { id: item.id.toString() },
               })
             }
           >
-            <View className="w-44 h-64 rounded-3xl overflow-hidden mb-3">
+            <View className="mb-3 h-64 w-44 overflow-hidden rounded-3xl">
               <Image
                 source={{
                   uri: image500(item.poster_path) || fallbackMoviePoster,
                 }}
-                className="w-full h-full"
+                className="h-full w-full"
                 resizeMode="cover"
               />
             </View>
-            <Text
-              className="text-black dark:text-white font-bold text-base w-44"
-              numberOfLines={1}
-            >
+            <Text className="w-44 text-base font-bold text-black dark:text-white" numberOfLines={1}>
               {item.title}
             </Text>
-            <Text className="text-gray-500 dark:text-gray-400 text-xs font-medium">
-              {item.release_date?.split("-")[0]}
+            <Text className="text-xs font-medium text-gray-500 dark:text-gray-400">
+              {item.release_date?.split('-')[0]}
             </Text>
           </TouchableOpacity>
         )}
@@ -388,7 +358,7 @@ export default function Tab() {
 
       <SectionHeader
         title="Coming Soon"
-        onExploreAll={() => router.push("/movies/upcoming-movies")}
+        onExploreAll={() => router.push('/movies/upcoming-movies')}
       />
       <FlatList
         data={upcomingMovies}
@@ -401,28 +371,25 @@ export default function Tab() {
             className="mr-5"
             onPress={() =>
               router.push({
-                pathname: "/movie/[id]",
+                pathname: '/movie/[id]',
                 params: { id: item.id.toString() },
               })
             }
           >
-            <View className="w-44 h-64 rounded-3xl overflow-hidden mb-3">
+            <View className="mb-3 h-64 w-44 overflow-hidden rounded-3xl">
               <Image
                 source={{
                   uri: image500(item.poster_path) || fallbackMoviePoster,
                 }}
-                className="w-full h-full"
+                className="h-full w-full"
                 resizeMode="cover"
               />
             </View>
-            <Text
-              className="text-black dark:text-white font-bold text-base w-44"
-              numberOfLines={1}
-            >
+            <Text className="w-44 text-base font-bold text-black dark:text-white" numberOfLines={1}>
               {item.title}
             </Text>
-            <Text className="text-gray-500 dark:text-gray-400 text-xs font-medium">
-              {item.release_date?.split("-")[0]}
+            <Text className="text-xs font-medium text-gray-500 dark:text-gray-400">
+              {item.release_date?.split('-')[0]}
             </Text>
           </TouchableOpacity>
         )}
