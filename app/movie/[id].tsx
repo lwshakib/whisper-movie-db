@@ -1,3 +1,6 @@
+/**
+ * Import utility functions for API calls and image formatting from TMDB config.
+ */
 import {
   fallbackMoviePoster,
   fallbackPersonImage,
@@ -8,6 +11,9 @@ import {
   image185,
   image500,
 } from '@/TMDB/config';
+/**
+ * Import custom components and context hooks.
+ */
 import FloatingBackButton from '@/components/FloatingBackButton';
 import { useFavorites } from '@/context';
 import { Ionicons } from '@expo/vector-icons';
@@ -24,11 +30,17 @@ import {
   useColorScheme,
   View,
 } from 'react-native';
+/**
+ * Import Reanimated for entry animations and YoutubePlayer for trailers.
+ */
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import YoutubePlayer from 'react-native-youtube-iframe';
 
 const { width, height } = Dimensions.get('window');
 
+/**
+ * Helper component to render a single item in the information grid.
+ */
 const MovieInfoItem = ({ title, value }: { title: string; value: string | number }) => (
   <View className="mb-4 w-[48%] rounded-lg border-0 bg-neutral-50 p-3 dark:bg-neutral-900">
     <Text className="mb-1 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
@@ -38,6 +50,9 @@ const MovieInfoItem = ({ title, value }: { title: string; value: string | number
   </View>
 );
 
+/**
+ * Formatter for displaying currency (budget, revenue).
+ */
 const currencyFormatter = new Intl.NumberFormat('en-US', {
   style: 'currency',
   currency: 'USD',
@@ -45,25 +60,37 @@ const currencyFormatter = new Intl.NumberFormat('en-US', {
   maximumFractionDigits: 0,
 });
 
+/**
+ * MovieDetails screen component.
+ * Displays comprehensive information about a specific movie.
+ */
 export default function MovieDetails() {
+  // Retrieve movie ID from the route parameters.
   const { id } = useLocalSearchParams();
   const router = useRouter();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
 
+  // State for different data segments
   const [movie, setMovie] = useState<any>(null);
   const [credits, setCredits] = useState<any>(null);
   const [similar, setSimilar] = useState<any>(null);
-  const [videos, setVideos] = useState<any>(null);
+  const [, setVideos] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [trailerKey, setTrailerKey] = useState<string | null>(null);
 
+  // Favorites logic from global context
   const { favorites, toggleFavorite } = useFavorites();
   const isFavorite = favorites.includes(id as string);
 
+  /**
+   * Effect hook to fetch all necessary data when the movie ID changes.
+   */
   useEffect(() => {
     if (!id) return;
     setLoading(true);
+
+    // Fetch details, credits, similar movies, and videos concurrently.
     Promise.all([
       fetchMovieDetails(id as string),
       fetchMovieCredits(id as string),
@@ -75,11 +102,13 @@ export default function MovieDetails() {
       setSimilar(similarRes);
       setVideos(videosRes);
 
-      // Find official trailer
+      /**
+       * Search for an official YouTube trailer.
+       */
       const trailer = videosRes?.results?.find(
         (v: any) => v.site === 'YouTube' && v.type === 'Trailer',
       );
-      // Fallback to Teaser or any video if trailer not found
+      // Fallback to any YouTube video if a specific trailer isn't found.
       const fallbackVideo = videosRes?.results?.find((v: any) => v.site === 'YouTube');
 
       setTrailerKey(trailer?.key || fallbackVideo?.key || null);
@@ -88,10 +117,12 @@ export default function MovieDetails() {
     });
   }, [id]);
 
+  /**
+   * Loading State Render
+   */
   if (loading) {
     return (
       <View className="flex-1 items-center justify-center bg-white p-4 dark:bg-black">
-        {/* Simple loading state or continue with skeleton if preferred, specifically user asked for data so cleaner loading is fine */}
         <View className="h-full w-full items-center justify-center">
           <View className="h-16 w-16 animate-spin rounded-full border-4 border-red-600 border-t-transparent" />
         </View>
@@ -99,6 +130,9 @@ export default function MovieDetails() {
     );
   }
 
+  /**
+   * Error State Render
+   */
   if (!movie) {
     return (
       <View className="flex-1 items-center justify-center bg-white dark:bg-black">
@@ -114,6 +148,7 @@ export default function MovieDetails() {
         backgroundColor: isDark ? '#000000' : '#ffffff',
       }}
     >
+      {/* UI Navigation & Actions */}
       <FloatingBackButton />
       <TouchableOpacity
         onPress={() => toggleFavorite(id as string)}
@@ -133,13 +168,14 @@ export default function MovieDetails() {
       >
         <StatusBar hidden />
 
-        {/* Header Image Section */}
+        {/* Hero Poster Section */}
         <View className="relative h-[500px] w-full">
           <Image
             source={{ uri: image500(movie.poster_path) || fallbackMoviePoster }}
             className="h-full w-full"
             resizeMode="cover"
           />
+          {/* Bottom gradient fade into background color */}
           <LinearGradient
             colors={['transparent', isDark ? '#000000' : '#ffffff']}
             style={{
@@ -153,7 +189,7 @@ export default function MovieDetails() {
           />
         </View>
 
-        {/* Title & Tagline */}
+        {/* Movie Summary Header */}
         <Animated.View
           entering={FadeInDown.duration(400).springify()}
           className="-mt-12 space-y-3 px-4"
@@ -163,11 +199,11 @@ export default function MovieDetails() {
           </Text>
           {movie.tagline ? (
             <Text className="text-center text-sm font-medium italic text-gray-500 dark:text-gray-400">
-              "{movie.tagline}"
+              &ldquo;{movie.tagline}&rdquo;
             </Text>
           ) : null}
 
-          {/* Genres */}
+          {/* Genre Chips */}
           <View className="mx-4 mt-2 flex-row flex-wrap justify-center">
             {movie.genres?.map((g: any, index: number) => (
               <View
@@ -181,13 +217,13 @@ export default function MovieDetails() {
             ))}
           </View>
 
-          {/* Overview */}
+          {/* Description */}
           <Text className="mx-2 mt-2 text-center text-base font-normal leading-6 text-gray-600 dark:text-neutral-300">
             {movie.overview}
           </Text>
         </Animated.View>
 
-        {/* Trailer */}
+        {/* Trailer Section */}
         {trailerKey && (
           <View className="mt-8 px-4">
             <Text className="mb-4 text-xl font-bold text-gray-900 dark:text-white">
@@ -199,7 +235,7 @@ export default function MovieDetails() {
           </View>
         )}
 
-        {/* Info Grid */}
+        {/* Information Grid Section */}
         <View className="mt-8 px-4">
           <Text className="mb-4 text-xl font-bold text-gray-900 dark:text-white">Information</Text>
           <View className="flex-row flex-wrap justify-between">
@@ -226,7 +262,7 @@ export default function MovieDetails() {
           </View>
         </View>
 
-        {/* Production Companies */}
+        {/* Production Companies Section */}
         {movie.production_companies?.length > 0 && (
           <View className="mt-4 px-4">
             <Text className="mb-4 text-xl font-bold text-gray-900 dark:text-white">Production</Text>
@@ -254,7 +290,7 @@ export default function MovieDetails() {
           </View>
         )}
 
-        {/* Cast */}
+        {/* Cast Section */}
         {credits?.cast?.length > 0 && (
           <View className="mt-8">
             <Text className="mb-4 px-4 text-xl font-bold text-gray-900 dark:text-white">
@@ -300,7 +336,7 @@ export default function MovieDetails() {
           </View>
         )}
 
-        {/* Similar Movies */}
+        {/* Similar Movies Section */}
         {similar?.results?.length > 0 && (
           <View className="mb-8 mt-8">
             <Text className="mb-4 px-4 text-xl font-bold text-gray-900 dark:text-white">

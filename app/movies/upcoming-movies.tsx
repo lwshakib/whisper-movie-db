@@ -1,3 +1,6 @@
+/**
+ * Import custom components for navigation and API configuration for fetching upcoming movies.
+ */
 import FloatingBackButton from '@/components/FloatingBackButton';
 import { fallbackMoviePoster, fetchUpcomingMovies, image500 } from '@/TMDB/config';
 import { useRouter } from 'expo-router';
@@ -13,17 +16,27 @@ import {
   useColorScheme,
   View,
 } from 'react-native';
+// Import Reanimated for smooth item entry animations.
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
+// Responsive grid calculations
 const { width } = Dimensions.get('window');
 const numColumns = 3;
 const gap = 12;
 const padding = 16;
+/**
+ * availableWidth takes screen width minus side paddings and the total gap between columns.
+ * itemWidth then divides that space by the number of columns.
+ */
 const availableWidth = width - padding * 2 - gap * (numColumns - 1);
 const itemWidth = availableWidth / numColumns;
 
+// Preset for skeleton loader items
 const SKELETON_ITEMS = Array.from({ length: 12 });
 
+/**
+ * SkeletonItem component displays a placeholder whilst data is loading.
+ */
 const SkeletonItem = () => (
   <View style={{ width: itemWidth, marginBottom: 16 }}>
     <View className="mb-2 h-[180px] animate-pulse rounded-xl bg-gray-800" />
@@ -32,6 +45,10 @@ const SkeletonItem = () => (
   </View>
 );
 
+/**
+ * UpcomingMovies screen component.
+ * Displays a paginated grid of movies that are scheduled for release soon.
+ */
 export default function UpcomingMovies() {
   const [movies, setMovies] = useState<any[]>([]);
   const [refreshing, setRefreshing] = useState(false);
@@ -39,12 +56,19 @@ export default function UpcomingMovies() {
   const [page, setPage] = useState(1);
   const [isFetchingMore, setIsFetchingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
+
   const router = useRouter();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
 
+  /**
+   * Encapsulated movie loading logic to handle initial load, refresh, and pagination.
+   * @param pageNumber The page to fetch from TMDB.
+   * @param isRefresh Whether this action is a pull-to-refresh.
+   */
   const loadMovies = useCallback(async (pageNumber: number, isRefresh = false) => {
     try {
+      // Set appropriate loading states
       if (isRefresh) {
         setRefreshing(true);
       } else if (pageNumber === 1) {
@@ -55,12 +79,14 @@ export default function UpcomingMovies() {
 
       const res = await fetchUpcomingMovies(pageNumber);
 
+      // If no results are returned, we've reached the end of the available list.
       if (res.results.length === 0) {
         setHasMore(false);
       } else {
         setHasMore(true);
       }
 
+      // Reset array if refreshing, otherwise append new results.
       if (pageNumber === 1) {
         setMovies(res.results || []);
       } else {
@@ -69,29 +95,42 @@ export default function UpcomingMovies() {
 
       setPage(pageNumber);
     } catch {
-      // Handle error silently
+      // Fail silently for better UX.
     } finally {
+      // Reset all loading states.
       setLoading(false);
       setRefreshing(false);
       setIsFetchingMore(false);
     }
   }, []);
 
+  /**
+   * Kick off initial data load on mount.
+   */
   useEffect(() => {
     loadMovies(1);
   }, [loadMovies]);
 
+  /**
+   * Reset pagination and reload data when user pulls down to refresh.
+   */
   const onRefresh = () => {
     setHasMore(true);
     loadMovies(1, true);
   };
 
+  /**
+   * trigger pagination when the user scrolls near the bottom of the list.
+   */
   const onEndReached = () => {
     if (!isFetchingMore && hasMore && !refreshing) {
       loadMovies(page + 1);
     }
   };
 
+  /**
+   * Renders an individual movie card in the grid.
+   */
   const renderItem = ({ item, index }: { item: any; index: number }) => (
     <Animated.View
       entering={FadeInDown.duration(200)}
@@ -106,6 +145,7 @@ export default function UpcomingMovies() {
           })
         }
       >
+        {/* Movie Poster */}
         <Image
           source={{
             uri: image500(item.poster_path) || fallbackMoviePoster,
@@ -119,6 +159,7 @@ export default function UpcomingMovies() {
           resizeMode="cover"
         />
         <View className="mt-2">
+          {/* Movie Title */}
           <Text
             className="text-xs font-bold text-white"
             style={{ color: isDark ? '#fff' : '#000' }}
@@ -126,6 +167,7 @@ export default function UpcomingMovies() {
           >
             {item.title}
           </Text>
+          {/* Release Year */}
           <Text className="text-[10px] text-gray-400">
             {item.release_date?.split('-')[0] || 'N/A'}
           </Text>
@@ -138,6 +180,7 @@ export default function UpcomingMovies() {
     <View className="flex-1 pt-4" style={{ backgroundColor: isDark ? '#000000' : '#ffffff' }}>
       <FloatingBackButton />
 
+      {/* Show skeleton items if data is loading and it's not a background refresh */}
       {loading && !refreshing ? (
         <View className="mt-20 px-4">
           <Text className="mb-6 text-2xl font-bold" style={{ color: isDark ? '#fff' : '#000' }}>
@@ -177,8 +220,9 @@ export default function UpcomingMovies() {
             />
           }
           onEndReached={onEndReached}
-          onEndReachedThreshold={2.0}
+          onEndReachedThreshold={2.0} // Load next page when 2 screen-lengths from the bottom.
           ListFooterComponent={
+            // Show a small loader at the bottom while fetching the next page.
             isFetchingMore ? (
               <View className="py-6">
                 <ActivityIndicator size="small" color="#ef4444" />

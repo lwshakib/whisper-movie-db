@@ -1,8 +1,12 @@
+/**
+ * Import search history hook from the global context.
+ * Import the searchMovies API function.
+ */
 import { useSearchHistory } from '@/context';
 import { searchMovies } from '@/TMDB/config';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Dimensions,
@@ -18,13 +22,19 @@ import {
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+// Screen width for calculation
 const { width } = Dimensions.get('window');
+// Grid layout constants
 const numColumns = 3;
 const gap = 12;
 const padding = 16;
+// Calculate item width based on screen width, padding, and gaps between columns
 const availableWidth = width - padding * 2 - gap * (numColumns - 1);
 const itemWidth = availableWidth / numColumns;
 
+/**
+ * Interface representing a Movie search result.
+ */
 interface Movie {
   id: number;
   title: string;
@@ -32,7 +42,12 @@ interface Movie {
   release_date: string;
 }
 
+/**
+ * Search screen component.
+ * Features debounced searching, infinite scrolling (pagination), and recent history.
+ */
 export default function Search() {
+  // Local state for search query and results
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Movie[]>([]);
   const [loading, setLoading] = useState(false);
@@ -41,14 +56,18 @@ export default function Search() {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
 
+  // Global search history management
   const { history, addToHistory, removeFromHistory, clearHistory } = useSearchHistory();
   const router = useRouter();
   const colorScheme = useColorScheme();
   const insets = useSafeAreaInsets();
+
+  // Refs for debouncing and tracking the latest request ID (to prevent race conditions)
   const inputRef = useRef<TextInput>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const latestQueryId = useRef<number>(0);
 
+  // Define theme colors based on current system appearance
   const isDark = colorScheme === 'dark';
   const theme = {
     bg: isDark ? '#000000' : '#ffffff',
@@ -59,7 +78,13 @@ export default function Search() {
     border: isDark ? '#2C2C2E' : '#E5E5EA',
   };
 
-  const performSearch = async (text: string, pageNum = 1) => {
+  /**
+   * Performs the search API call.
+   * @param text The query text.
+   * @param pageNum The page number for pagination.
+   */
+  const performSearch = useCallback(async (text: string, pageNum = 1) => {
+    // Return early if query is empty
     if (!text.trim()) {
       setResults([]);
       setSearched(false);
@@ -68,6 +93,7 @@ export default function Search() {
       return;
     }
 
+    // Unique ID for the current request to handle race conditions
     const queryId = Date.now();
     latestQueryId.current = queryId;
 
@@ -80,15 +106,19 @@ export default function Search() {
 
     try {
       const res = await searchMovies({ query: text, page: pageNum });
+      // Only update state if this is still the latest request
       if (latestQueryId.current === queryId) {
         if (pageNum === 1) {
           setResults(res.results || []);
+          // Save term to search history if results found
           if (res.results?.length > 0) {
             addToHistory(text);
           }
         } else {
+          // Append results for pagination
           setResults((prev) => [...prev, ...(res.results || [])]);
         }
+        // Check if more pages exist
         setHasMore(pageNum < (res.total_pages || 0));
         setPage(pageNum);
       }
@@ -100,8 +130,12 @@ export default function Search() {
         setLoadingMore(false);
       }
     }
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
+  /**
+   * Effect hook to implement debounced search as the user types.
+   */
   useEffect(() => {
     if (!query.trim()) {
       setResults([]);
@@ -112,6 +146,7 @@ export default function Search() {
 
     if (debounceRef.current) clearTimeout(debounceRef.current);
 
+    // Wait for 600ms of inactivity before firing the search
     debounceRef.current = setTimeout(() => {
       performSearch(query);
     }, 600);
@@ -119,8 +154,11 @@ export default function Search() {
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [query]);
+  }, [query, performSearch]);
 
+  /**
+   * Logic to clear the search input and results.
+   */
   const clearSearch = () => {
     setQuery('');
     setResults([]);
@@ -128,9 +166,12 @@ export default function Search() {
     inputRef.current?.focus();
   };
 
+  /**
+   * Renders a single movie item in the search results grid.
+   */
   const renderItem = ({ item, index }: { item: Movie; index: number }) => (
     <Animated.View
-      entering={FadeInDown.duration(200)} // Removed heavy spring/delay logic
+      entering={FadeInDown.duration(200)}
       style={{ width: itemWidth, marginBottom: 16 }}
     >
       <TouchableOpacity
@@ -168,6 +209,7 @@ export default function Search() {
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.bg, paddingTop: insets.top }}>
+      {/* Search Header and Input */}
       <View className="px-4 pb-4">
         <Text className="mb-4 mt-2 text-3xl font-bold" style={{ color: theme.text }}>
           Search
@@ -189,6 +231,7 @@ export default function Search() {
             selectionColor={theme.primary}
             onSubmitEditing={() => performSearch(query)}
           />
+          {/* Show clear button if there is text in the input */}
           {query.length > 0 && (
             <TouchableOpacity onPress={clearSearch}>
               <Ionicons name="close-circle" size={20} color={theme.textSecondary} />
@@ -197,11 +240,14 @@ export default function Search() {
         </View>
       </View>
 
+      {/* Main Content Area */}
       {loading ? (
+        // Loading State
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color={theme.primary} />
         </View>
       ) : query.trim() !== '' ? (
+        // Results State
         <FlatList
           data={results}
           keyExtractor={(item, index) => `${item.id}-${index}`}
@@ -214,6 +260,7 @@ export default function Search() {
           contentContainerStyle={{ paddingBottom: 100 }}
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={
+            // Empty State (Searched but no results found)
             !loading && searched ? (
               <View className="mt-20 items-center px-8">
                 <Ionicons name="film-outline" size={64} color={theme.textSecondary} />
@@ -221,7 +268,7 @@ export default function Search() {
                   className="mt-4 text-center text-lg font-semibold"
                   style={{ color: theme.text }}
                 >
-                  No movies found for "{query}"
+                  No movies found for &ldquo;{query}&rdquo;
                 </Text>
                 <Text className="mt-2 text-center text-sm" style={{ color: theme.textSecondary }}>
                   Try searching for another movie title.
@@ -231,12 +278,14 @@ export default function Search() {
           }
           keyboardDismissMode="on-drag"
           onEndReached={() => {
+            // Trigger pagination when reaching the bottom
             if (!loading && !loadingMore && hasMore) {
               performSearch(query, page + 1);
             }
           }}
-          onEndReachedThreshold={2.0} // Trigger load much earlier (when 2 screen heights away)
+          onEndReachedThreshold={2.0}
           ListFooterComponent={
+            // Pagination Loader
             loadingMore ? (
               <View className="py-4">
                 <ActivityIndicator size="small" color={theme.primary} />
@@ -245,6 +294,7 @@ export default function Search() {
           }
         />
       ) : (
+        // Initial/History State (No current search query)
         <ScrollView
           className="flex-1 px-4"
           keyboardDismissMode="on-drag"
@@ -268,6 +318,7 @@ export default function Search() {
                   </Text>
                 </TouchableOpacity>
               </View>
+              {/* List of past search terms */}
               {history.map((term, index) => (
                 <TouchableOpacity
                   key={`${term}-${index}`}
@@ -290,6 +341,7 @@ export default function Search() {
                     />
                     <Text style={{ color: theme.textSecondary, fontSize: 16 }}>{term}</Text>
                   </View>
+                  {/* Remove specific item from history */}
                   <TouchableOpacity onPress={() => removeFromHistory(term)} hitSlop={10}>
                     <Ionicons name="close" size={18} color={theme.textSecondary} />
                   </TouchableOpacity>
@@ -297,6 +349,7 @@ export default function Search() {
               ))}
             </Animated.View>
           ) : (
+            // Placeholder when history is empty
             <View className="mt-32 items-center opacity-50">
               <Ionicons name="search" size={64} color={theme.textSecondary} />
               <Text className="mt-4 text-base font-medium" style={{ color: theme.textSecondary }}>

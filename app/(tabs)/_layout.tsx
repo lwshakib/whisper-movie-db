@@ -1,3 +1,11 @@
+/**
+ * Import Ionicons for tab bar icons.
+ * Import BottomTabBarButtonProps to type the custom tab button.
+ * Import Haptics for tactile feedback on interaction.
+ * Import Tabs from expo-router for tab-based navigation.
+ * Import React and necessary components.
+ * Import Reanimated for tab icon animations.
+ */
 import { Ionicons } from '@expo/vector-icons';
 import { BottomTabBarButtonProps } from '@react-navigation/bottom-tabs';
 import * as Haptics from 'expo-haptics';
@@ -6,12 +14,14 @@ import React from 'react';
 import { TouchableOpacity, useColorScheme, View, ViewStyle } from 'react-native';
 import Animated, { useAnimatedStyle, withSpring, withTiming } from 'react-native-reanimated';
 
-interface TabIconProps {
-  color: string;
-  focused: boolean;
-}
-
+/**
+ * AnimatedIcon component handles the micro-animations for each tab icon.
+ * It scales and translates the icon and shows a dot when focused.
+ */
 const AnimatedIcon = ({ name, focused, color }: { name: any; focused: boolean; color: string }) => {
+  /**
+   * Animation for the icon itself (scaling and slight lift).
+   */
   const animatedIconStyle = useAnimatedStyle(() => {
     return {
       transform: [
@@ -31,6 +41,9 @@ const AnimatedIcon = ({ name, focused, color }: { name: any; focused: boolean; c
     };
   });
 
+  /**
+   * Animation for the small indicator dot below the icon.
+   */
   const animatedDotStyle = useAnimatedStyle(() => {
     return {
       opacity: withTiming(focused ? 1 : 0, { duration: 250 }),
@@ -47,9 +60,11 @@ const AnimatedIcon = ({ name, focused, color }: { name: any; focused: boolean; c
 
   return (
     <View style={{ alignItems: 'center', justifyContent: 'center' }}>
+      {/* The animated icon */}
       <Animated.View style={animatedIconStyle}>
         <Ionicons size={26} name={focused ? name : `${name}-outline`} color={color} />
       </Animated.View>
+      {/* The indicator dot */}
       <Animated.View
         style={[
           {
@@ -67,9 +82,15 @@ const AnimatedIcon = ({ name, focused, color }: { name: any; focused: boolean; c
   );
 };
 
+/**
+ * TabLayout component defines the appearance and behavior of the bottom tab bar.
+ */
 export default function TabLayout(): React.JSX.Element {
   const colorScheme = useColorScheme();
 
+  /**
+   * Common styles for the tab bar, using a floating design.
+   */
   const tabBarStyle: ViewStyle = {
     backgroundColor: colorScheme === 'dark' ? '#1A1A1A' : '#FFFFFF',
     borderTopWidth: 0,
@@ -86,6 +107,9 @@ export default function TabLayout(): React.JSX.Element {
     zIndex: 50,
   };
 
+  /**
+   * Custom renderer for the tab buttons to add haptic feedback.
+   */
   const renderTabBarButton = (props: BottomTabBarButtonProps): React.JSX.Element => {
     const { style, onPress, children, ...rest } = props;
 
@@ -93,6 +117,7 @@ export default function TabLayout(): React.JSX.Element {
       <TouchableOpacity
         {...(rest as any)}
         onPress={(e) => {
+          // Trigger a light haptic impact on press.
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
           onPress?.(e);
         }}
@@ -105,6 +130,7 @@ export default function TabLayout(): React.JSX.Element {
           },
         ]}
       >
+        {/* Handle both function and non-function children patterns for tab buttons. */}
         {typeof children === 'function' ? (children as any)({ pressed: false }) : children}
       </TouchableOpacity>
     );
@@ -117,10 +143,11 @@ export default function TabLayout(): React.JSX.Element {
         tabBarStyle,
         tabBarActiveTintColor: '#ef4444',
         tabBarInactiveTintColor: colorScheme === 'dark' ? '#666666' : '#999999',
-        tabBarShowLabel: false,
+        tabBarShowLabel: false, // Cleaner look without text labels
         tabBarButton: renderTabBarButton,
       }}
     >
+      {/* Home Tab */}
       <Tabs.Screen
         name="index"
         options={{
@@ -130,6 +157,7 @@ export default function TabLayout(): React.JSX.Element {
           ),
         }}
       />
+      {/* Search Tab */}
       <Tabs.Screen
         name="search"
         options={{

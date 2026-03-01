@@ -1,3 +1,6 @@
+/**
+ * Import utility functions for person and movie data from TMDB config.
+ */
 import {
   fallbackMoviePoster,
   fallbackPersonImage,
@@ -20,10 +23,14 @@ import {
   useColorScheme,
   View,
 } from 'react-native';
+// Import Reanimated for smooth entry transitions.
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
 const { width, height } = Dimensions.get('window');
 
+/**
+ * Helper component to render a single item in the person info grid.
+ */
 const PersonInfoItem = ({ title, value }: { title: string; value: string | number }) => (
   <View className="mb-4 w-[48%] rounded-lg border-0 bg-neutral-50 p-3 dark:bg-neutral-900">
     <Text className="mb-1 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
@@ -33,22 +40,35 @@ const PersonInfoItem = ({ title, value }: { title: string; value: string | numbe
   </View>
 );
 
+/**
+ * PersonDetails screen component.
+ * Displays information about an actor or director, including their biography and filmography.
+ */
 export default function PersonDetails() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
+
+  // State for person details and their movie credits
   const [person, setPerson] = useState<any>(null);
   const [movies, setMovies] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
 
+  /**
+   * Fetch person details and movies when the ID changes.
+   */
   useEffect(() => {
     if (!id) return;
     setLoading(true);
+
     Promise.all([fetchPersonDetails(id as string), fetchPersonMovies(id as string)]).then(
       ([personRes, moviesRes]) => {
         setPerson(personRes);
-        // Sort movies by popularity or release date
+        /**
+         * Sort movies by popularity to show the "Known For" list most relevant items first.
+         */
         const sortedMovies = (moviesRes.cast || []).sort((a: any, b: any) => {
           return (b.popularity || 0) - (a.popularity || 0);
         });
@@ -58,6 +78,9 @@ export default function PersonDetails() {
     );
   }, [id]);
 
+  /**
+   * Loading Spinner
+   */
   if (loading) {
     return (
       <View className="flex-1 items-center justify-center bg-white p-4 dark:bg-black">
@@ -66,6 +89,9 @@ export default function PersonDetails() {
     );
   }
 
+  /**
+   * Error state
+   */
   if (!person) {
     return (
       <View className="flex-1 items-center justify-center bg-white dark:bg-black">
@@ -74,6 +100,9 @@ export default function PersonDetails() {
     );
   }
 
+  /**
+   * Map gender numerical codes to human-readable strings as per TMDB API docs.
+   */
   const genderMap: Record<number, string> = {
     0: 'Not set',
     1: 'Female',
@@ -90,7 +119,7 @@ export default function PersonDetails() {
         contentContainerStyle={{ paddingBottom: 50 }}
         showsVerticalScrollIndicator={false}
       >
-        {/* Header Image */}
+        {/* Profile Image Section */}
         <View className="relative h-[500px] w-full">
           <Image
             source={{
@@ -99,6 +128,7 @@ export default function PersonDetails() {
             className="h-full w-full"
             resizeMode="cover"
           />
+          {/* Gradient fade into screen background */}
           <LinearGradient
             colors={['transparent', isDark ? '#000000' : '#ffffff']}
             style={{
@@ -112,7 +142,7 @@ export default function PersonDetails() {
           />
         </View>
 
-        {/* Name & Bio */}
+        {/* Identity & Biography */}
         <Animated.View entering={FadeInDown.duration(400).springify()} className="-mt-12 mb-6 px-4">
           <Text className="mb-2 text-center text-3xl font-black text-gray-900 shadow-sm dark:text-white">
             {person.name}
@@ -126,7 +156,7 @@ export default function PersonDetails() {
           </Text>
         </Animated.View>
 
-        {/* Info Grid */}
+        {/* Personal Details Grid */}
         <View className="mb-4 px-4">
           <Text className="mb-4 text-xl font-bold text-gray-900 dark:text-white">
             Personal Info
@@ -143,7 +173,7 @@ export default function PersonDetails() {
           </View>
         </View>
 
-        {/* Movies Section */}
+        {/* Filmography Section */}
         {movies.length > 0 && (
           <View className="mt-4 px-4">
             <Text className="mb-4 text-xl font-bold text-gray-900 dark:text-white">Known For</Text>

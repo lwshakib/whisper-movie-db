@@ -1,3 +1,6 @@
+/**
+ * Import utility functions for API calls and image formatting from TMDB config.
+ */
 import {
   fallbackMoviePoster,
   fetchTopRatedMovies,
@@ -5,6 +8,9 @@ import {
   fetchUpcomingMovies,
   image500,
 } from '@/TMDB/config';
+/**
+ * Import necessary React, Expo, and React Native components.
+ */
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
@@ -24,7 +30,9 @@ import {
 
 const { width } = Dimensions.get('window');
 
-// Define the Movie type
+/**
+ * Interface representing a Movie object from TMDB.
+ */
 interface Movie {
   backdrop_path: string;
   poster_path: string;
@@ -34,13 +42,16 @@ interface Movie {
   id: number;
 }
 
-// Modern Section Header
+/**
+ * SectionHeader component for displaying category titles with an 'Explore All' action.
+ */
 const SectionHeader: React.FC<{ title: string; onExploreAll: () => void }> = ({
   title,
   onExploreAll,
 }) => (
   <View className="mb-4 mt-8 flex-row items-center justify-between px-4">
     <View className="flex-row items-center">
+      {/* Decorative red pill before the title */}
       <View className="mr-3 h-6 w-1.5 rounded-full bg-red-600" />
       <Text className="text-2xl font-black tracking-tight text-black dark:text-white">{title}</Text>
     </View>
@@ -56,29 +67,46 @@ const SectionHeader: React.FC<{ title: string; onExploreAll: () => void }> = ({
   </View>
 );
 
+/**
+ * Main Home Tab component.
+ */
 export default function Tab() {
   const router = useRouter();
   const colorScheme = useColorScheme();
+
+  // State for movie lists
   const [trendingMovies, setTrendingMovies] = useState<Movie[]>([]);
   const [topRatedMovies, setTopRatedMovies] = useState<Movie[]>([]);
   const [upcomingMovies, setUpcomingMovies] = useState<Movie[]>([]);
+
+  // UI states
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
+
+  // Refs for tracking initialization and list control
   const flatListRef = useRef<FlatList>(null);
   const initializedRef = useRef(false);
 
+  // Data for the looped/infinite hero slider
   const [heroData, setHeroData] = useState<Movie[]>([]);
 
+  /**
+   * Loads movie data from the TMDB API.
+   * @param isRefreshing Whether this is a pull-to-refresh action.
+   */
   const loadData = async (isRefreshing = false) => {
     if (!isRefreshing) setLoading(true);
 
     try {
-      // 1. Fetch Trending Movies first
+      // 1. Fetch Trending Movies
       const trendingRes = await fetchTrendingMovies();
       setTrendingMovies(trendingRes.results);
 
-      // Prepare infinite data
+      /**
+       * Prepare infinite-like looped data for the hero slider.
+       * We take the first 5 movies and repeat them 100 times to create a large enough buffer for smooth looping.
+       */
       if (trendingRes.results.length > 0) {
         const base = trendingRes.results.slice(0, 5);
         const looped = [];
@@ -88,13 +116,14 @@ export default function Tab() {
         setHeroData(looped);
       }
 
+      // Hide loading overlay before fetching secondary content for faster interactivity
       if (!isRefreshing) setLoading(false);
 
-      // 2. Fetch Top Rated
+      // 2. Fetch Top Rated Movies
       const topRatedRes = await fetchTopRatedMovies();
       setTopRatedMovies(topRatedRes.results);
 
-      // 3. Fetch Upcoming
+      // 3. Fetch Upcoming Movies
       const upcomingRes = await fetchUpcomingMovies();
       setUpcomingMovies(upcomingRes.results);
     } catch (error) {
@@ -105,11 +134,17 @@ export default function Tab() {
     }
   };
 
+  /**
+   * Initial data fetch on mount.
+   */
   useEffect(() => {
     loadData();
   }, []);
 
-  // Initialize scroll position when data is ready
+  /**
+   * Sets the initial scroll position of the hero slider to the middle of the looped dataset.
+   * This provides the illusion of infinite scrolling in both directions.
+   */
   useEffect(() => {
     if (heroData.length > 0 && !initializedRef.current) {
       setTimeout(() => {
@@ -120,15 +155,23 @@ export default function Tab() {
     }
   }, [heroData]);
 
+  /**
+   * Handler for pull-to-refresh.
+   */
   const onRefresh = () => {
     setRefreshing(true);
     loadData(true);
   };
 
+  /**
+   * Implements auto-scrolling for the hero slider.
+   * Advances the index every 3 seconds.
+   */
   useEffect(() => {
     if (heroData.length > 0 && !loading && initializedRef.current) {
       const interval = setInterval(() => {
         const nextIndex = activeIndex + 1;
+        // If we reach the end of the huge looped array, jump back to the middle quietly
         if (nextIndex >= heroData.length) {
           flatListRef.current?.scrollToIndex({ index: 250, animated: false });
           setActiveIndex(250);
@@ -145,8 +188,10 @@ export default function Tab() {
     }
   }, [activeIndex, heroData, loading]);
 
+  /**
+   * Renders a single item in the hero slider.
+   */
   const renderHeroItem = ({ item }: { item: Movie }) => (
-    // ... same render item logic ...
     <TouchableOpacity
       activeOpacity={1}
       onPress={() =>
@@ -164,6 +209,7 @@ export default function Tab() {
         className="h-[550px] w-full justify-end"
         resizeMode="cover"
       >
+        {/* Gradient overlay for text contrast and premium look */}
         <LinearGradient
           colors={['transparent', 'rgba(0,0,0,0.5)', '#000000']}
           className="absolute inset-x-0 bottom-0 h-[80%]"
@@ -181,6 +227,7 @@ export default function Tab() {
             {item.overview}
           </Text>
           <View className="flex-row items-center">
+            {/* Primary Action Button */}
             <TouchableOpacity
               onPress={() =>
                 router.push({
@@ -206,6 +253,9 @@ export default function Tab() {
     </TouchableOpacity>
   );
 
+  /**
+   * Skeleton loader view shown during initial load.
+   */
   if (loading) {
     return (
       <View
@@ -217,7 +267,7 @@ export default function Tab() {
         <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
         <View className="h-[550px] w-full animate-pulse bg-gray-200 dark:bg-zinc-900" />
         <View className="p-4">
-          <View className="mb-6 h-8 w-48 rounded-lg bg-gray-200 dark:bg-zinc-900" />
+          <div className="mb-6 h-8 w-48 rounded-lg bg-gray-200 dark:bg-zinc-900" />
           <View className="flex-row">
             {[1, 2, 3].map((i) => (
               <View key={i} className="mr-4 h-60 w-40 rounded-2xl bg-gray-200 dark:bg-zinc-900" />
@@ -246,7 +296,7 @@ export default function Tab() {
     >
       <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
 
-      {/* Hero Slider */}
+      {/* Hero Slider Section */}
       <View>
         <FlatList
           ref={flatListRef}
@@ -271,7 +321,7 @@ export default function Tab() {
         />
       </View>
 
-      {/* Lists */}
+      {/* Horizontal Trending List */}
       <SectionHeader title="Trending" onExploreAll={() => router.push('/movies/trending-movies')} />
       <FlatList
         data={trendingMovies.slice(5)}
@@ -317,6 +367,7 @@ export default function Tab() {
         )}
       />
 
+      {/* Horizontal Top Rated List */}
       <SectionHeader
         title="Top Rated"
         onExploreAll={() => router.push('/movies/top-rated-movies')}
@@ -356,6 +407,7 @@ export default function Tab() {
         )}
       />
 
+      {/* Horizontal Coming Soon (Upcoming) List */}
       <SectionHeader
         title="Coming Soon"
         onExploreAll={() => router.push('/movies/upcoming-movies')}

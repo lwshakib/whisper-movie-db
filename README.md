@@ -1,4 +1,4 @@
-# Whisper - Movie & TV Show Discovery App 🎬
+# <img src="./assets/logo.svg" alt="Whisper Logo" width="40" valign="middle"> Whisper - Movie & TV Show Discovery App
 
 ![Whisper Banner](https://img.shields.io/badge/Status-Active-success?style=flat-square) ![License](https://img.shields.io/badge/License-MIT-blue?style=flat-square) ![Expo](https://img.shields.io/badge/Expo-52.0.0-black?logo=expo&style=flat-square)
 
